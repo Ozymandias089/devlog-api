@@ -1,10 +1,12 @@
 package com.ozymandias089.devlog_api.auth.jwt;
 
+import com.ozymandias089.devlog_api.global.exception.JwtValidationException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
@@ -44,12 +47,14 @@ public class JwtTokenProvider {
     public String generateAccessToken(String uuid) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + TimeUnit.MINUTES.toMillis(accessTokenExpirationMinutes));
-        return Jwts.builder()
+        String accessToken = Jwts.builder()
                 .subject(uuid)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
                 .compact();
+        log.info("Access Token Created for uuid: {}", uuid);
+        return accessToken;
     }
 
     /**
@@ -67,20 +72,31 @@ public class JwtTokenProvider {
                 .expiration(Date.from(expiryDate))
                 .signWith(secretKey)
                 .compact();
+        log.info("Refresh Token Created for uuid: {}", uuid);
 
         String redisKey = "RT:"+uuid;
-        stringRedisTemplate.opsForValue().set(redisKey, refreshToken, refreshTokenExpirationDays, TimeUnit.DAYS);
-
+        try {
+            stringRedisTemplate.opsForValue().set(redisKey, refreshToken, refreshTokenExpirationDays, TimeUnit.DAYS);
+            log.info("Refresh Token stored in Redis for uuid: {}", uuid);
+        } catch (Exception e) {
+            log.info("Failed to store refresh token for uuid {}: {}", uuid, e.getMessage(), e);
+            throw new JwtValidationException("Failed to store Refresh Token ", e);
+        }
         return refreshToken;
     }
 
     public String getSubject(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+        } catch(JwtException | IllegalArgumentException e) {
+            log.error("Failed to extract Subject From Token: {}", token);
+            throw new JwtValidationException("Invalid JWT Token", e);
+        }
     }
 
     public boolean isTokenValid(String token) {
@@ -91,6 +107,7 @@ public class JwtTokenProvider {
                     .parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT Token: {}", e.getMessage());
             return false;
         }
     }
