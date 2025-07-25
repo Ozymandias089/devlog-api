@@ -1,6 +1,7 @@
 package com.ozymandias089.devlog_api.auth.jwt;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -8,85 +9,111 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-// todo: Fucking figure out how jjwt 0.12.x works
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
+    private final StringRedisTemplate stringRedisTemplate;
+
     @Value("${jwt.secret}")
-    private String secretKey;
+    private final String secretKeyBase64;
+
+    private SecretKey secretKey;
 
     @Value("${jwt.access-token-expiration}")
-    private long accessTokenValidityInMs;
+    private final long accessTokenExpirationMinutes;
 
     @Value("${jwt.refresh-token-expiration}")
-    private long refreshTokenValidityInMs;
-
-    private final StringRedisTemplate redisTemplate;
-
-    private Key key;
+    private final long refreshTokenExpirationDays;
 
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        byte[] keyBytes = Decoders.BASE64.decode(secretKeyBase64);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // Access Token 생성
-    public String createAccessToken(String memberId) {
-        Instant now = Instant.now();
-        JwtBuilder builder = Jwts.builder()
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusMillis(accessTokenValidityInMs)))
-                .claims(Map.of("sub", memberId))
-                .signWith(key, Jwts.SIG.HS256);
-
-        return builder.compact();
+    /**
+     * Generates a new JWT access Token for the given uid.
+     * @param uuid The uuid to be included in the token's subject.
+     * @return A signed JWT access token string.
+     */
+    public String generateAccessToken(String uuid) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + TimeUnit.MINUTES.toMillis(accessTokenExpirationMinutes));
+        return Jwts.builder()
+                .subject(uuid)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(secretKey)
+                .compact();
     }
 
-    // Refresh Token 생성 및 Redis 저장
-    public String createRefreshToken(String memberId) {
+    /**
+     * Generates a new JWT refresh token for the given uuid
+     * @param uuid The uuid to be included in the token's subject.
+     * @return A Signed JWT refresh Token string
+     */
+    public String generateRefreshToken(String uuid) {
         Instant now = Instant.now();
+        Instant expiryDate = now.plusSeconds(TimeUnit.DAYS.toSeconds(refreshTokenExpirationDays));
+
         String refreshToken = Jwts.builder()
+                .subject(uuid)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusMillis(refreshTokenValidityInMs)))
-                .claims(Map.of("sub", memberId))
-                .signWith(key, Jwts.SIG.HS256)
+                .expiration(Date.from(expiryDate))
+                .signWith(secretKey)
                 .compact();
 
-        redisTemplate.opsForValue().set("RT:" + memberId, refreshToken, refreshTokenValidityInMs, TimeUnit.MILLISECONDS);
+        String redisKey = "RT:"+uuid;
+        stringRedisTemplate.opsForValue().set(redisKey, refreshToken, refreshTokenExpirationDays, TimeUnit.DAYS);
+
         return refreshToken;
     }
 
-    // 토큰 유효성 검증
-    public boolean validateToken(String token) {
+    public String getSubject(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+
+    public boolean isTokenValid(String token) {
         try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
+            Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
 
-    // 토큰에서 회원 ID(subject) 추출
-    public String getMemberIdFromToken(String token) {
-        JwtParser parser = Jwts.parser().verifyWith(key).build();
-        Jwt<?, ?> parsed = parser.parse(token);
-        Claims claims = ((Jws<Claims>) parsed).getPayload();
-        return claims.getSubject(); // 혹은 claims.get("sub", String.class)
+    public boolean validateRefreshToken(String uuid, String requestToken) {
+        String storedToken = getRefreshToken(uuid);
+        return storedToken != null && storedToken.equals(requestToken);
     }
 
-    // Redis에 저장된 Refresh Token 조회
-    public String getStoredRefreshToken(String memberId) {
-        return redisTemplate.opsForValue().get("RT:" + memberId);
+    public void deleteRefreshToken(String uuid) {
+        stringRedisTemplate.delete("RT:" + uuid);
     }
 
-    // Redis에서 Refresh Token 삭제
-    public void deleteRefreshToken(String memberId) {
-        redisTemplate.delete("RT:" + memberId);
+    public String getRefreshToken(String uuid) {
+        return stringRedisTemplate.opsForValue().get("RT:" + uuid);
+    }
+
+    public void blacklistAccessToken(String token, long expirationMillis) {
+        // 블랙리스트 키: "BL:{token}"
+        stringRedisTemplate.opsForValue().set("BL:" + token, "logout", expirationMillis, TimeUnit.MILLISECONDS);
+    }
+
+    public boolean isAccessTokenBlacklisted(String token) {
+        return stringRedisTemplate.hasKey("BL:" + token);
     }
 }
