@@ -46,7 +46,7 @@ Content-Type: application/json
 이 예시는 너의 회원가입 API와 관련된 현재 코드 구조 및 요구사항을 기반으로 작성된 것이며,
 앞으로 다른 기능(로그인, 비밀번호 변경 등)이 추가되면 확장 가능하게 작성되어 있어.
 
-⸻
+---
 
 
 # Devlog API - 사용자 인증 시스템
@@ -111,7 +111,7 @@ Content-Type: application/json
 "This email already exists."
 ```
 
-⸻
+---
 
 🛠 프로젝트 구조 (일부)
 ```
@@ -134,7 +134,7 @@ com.ozymandias089.devlog_api
 └── ...
 ```
 
-⸻
+---
 
 ⏭️ TODO
 	•	비밀번호 암호화 (BCryptEncoder 등)
@@ -144,7 +144,7 @@ com.ozymandias089.devlog_api
 	•	프로필 수정
 	•	테스트 코드 작성 (단위/통합)
 
-⸻
+---
 
 💡 기여 & 라이센스
 
@@ -153,12 +153,14 @@ Pull Request 또는 Issue는 언제든 환영합니다!
 
 ---
 TODO: 
-- Swagger 연동 문서 예시
-- Postman 테스트 컬렉션 링크
-- DB 설계서
-	1.	auth.dto.LoginRequestDTO, TokenResponseDTO 생성
-	2.	JwtTokenProvider 생성
-	3.	AuthService.login() 구현
-	4.	AuthController 생성
-	5.	SecurityConfig 설정
-	6.	(선택) RefreshToken 저장용 Redis 연동
+- AuthenticationFilter 추가
+- Token 관련 기능들을 통합
+- Spring Security Config 구성
+- login/Logout/RefreshToken Controller 구성
+- 예외처리 글로벌 핸들러 구성
+- 추가 필요 기능
+ 	1.	회원가입 API + 비밀번호 암호화 저장
+	2.	로그인 API → matches()로 비밀번호 검증 추가
+	3.	JwtAuthenticationFilter 등록 → 실질적인 인증 작동
+	4.	SecurityConfig에서 인증 흐름 구성
+	5.	(선택) 예외처리/테스트 작성
