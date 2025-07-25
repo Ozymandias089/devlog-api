@@ -1,6 +1,7 @@
 package com.ozymandias089.devlog_api.user.service;
 
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
+import com.ozymandias089.devlog_api.user.MemberMapper;
 import com.ozymandias089.devlog_api.user.dto.SignupRequestDTO;
 import com.ozymandias089.devlog_api.user.dto.UserResponseDTO;
 import com.ozymandias089.devlog_api.user.entity.Member;
@@ -15,30 +16,20 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MemberService {
     private final MemberRepository repository;
+    private final MemberMapper mapper;
 
     @Transactional
     public UserResponseDTO signUp(SignupRequestDTO requestDTO) {
         if(repository.findByEmail(requestDTO.getEmail()).isPresent()) {
             throw new DuplicateEmailExcpetion(requestDTO.getEmail());
         }
-
-        Member member = Member.builder()
-                .email(requestDTO.getEmail())
-                .password(requestDTO.getPassword()) // todo: Implement Password encryption
-                .uuid(UUID.randomUUID())
-                .build();
-
+        Member member = mapper.toEntity(requestDTO);
         Member saved = repository.save(member);
-
-        return UserResponseDTO.builder()
-                .uuid(saved.getUuid())
-                .email(saved.getEmail())
-                .username(generateUsername())
-                .build();
+        return mapper.toResponse(saved, generateUsername());
     }
 
     private String generateUsername() {
-        int random = (int) (Math.random() * 1_000_000);
+        int random = (int) (Math.random() * 1_000_000);// todo: include validation logic
         return String.format("User-%06d", random);
     }
 }
