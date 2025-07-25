@@ -156,3 +156,9 @@ TODO:
 - Swagger 연동 문서 예시
 - Postman 테스트 컬렉션 링크
 - DB 설계서
+	1.	auth.dto.LoginRequestDTO, TokenResponseDTO 생성
+	2.	JwtTokenProvider 생성
+	3.	AuthService.login() 구현
+	4.	AuthController 생성
+	5.	SecurityConfig 설정
+	6.	(선택) RefreshToken 저장용 Redis 연동
