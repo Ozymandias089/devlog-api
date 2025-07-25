@@ -20,15 +20,15 @@ public class JwtTokenProvider {
     private final StringRedisTemplate stringRedisTemplate;
 
     @Value("${jwt.secret}")
-    private final String secretKeyBase64;
+    private String secretKeyBase64;
 
     private SecretKey secretKey;
 
     @Value("${jwt.access-token-expiration}")
-    private final long accessTokenExpirationMinutes;
+    private long accessTokenExpirationMinutes;
 
     @Value("${jwt.refresh-token-expiration}")
-    private final long refreshTokenExpirationDays;
+    private long refreshTokenExpirationDays;
 
     @PostConstruct
     public void init() {
@@ -109,8 +109,19 @@ public class JwtTokenProvider {
     }
 
     public void blacklistAccessToken(String token, long expirationMillis) {
-        // 블랙리스트 키: "BL:{token}"
-        stringRedisTemplate.opsForValue().set("BL:" + token, "logout", expirationMillis, TimeUnit.MILLISECONDS);
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        long expiration = claims.getExpiration().getTime();
+        long now = System.currentTimeMillis();
+        long ttl = expiration - now;
+
+        if (ttl > 0) {
+            stringRedisTemplate.opsForValue().set("BL:" + token, "logout", ttl, TimeUnit.MILLISECONDS);
+        }
     }
 
     public boolean isAccessTokenBlacklisted(String token) {
