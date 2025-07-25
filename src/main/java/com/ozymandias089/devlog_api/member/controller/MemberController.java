@@ -1,8 +1,8 @@
-package com.ozymandias089.devlog_api.user.controller;
+package com.ozymandias089.devlog_api.member.controller;
 
-import com.ozymandias089.devlog_api.user.dto.SignupRequestDTO;
-import com.ozymandias089.devlog_api.user.dto.UserResponseDTO;
-import com.ozymandias089.devlog_api.user.service.MemberService;
+import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
+import com.ozymandias089.devlog_api.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

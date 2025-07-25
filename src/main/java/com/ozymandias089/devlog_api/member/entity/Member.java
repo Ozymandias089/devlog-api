@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.user.entity;
+package com.ozymandias089.devlog_api.member.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

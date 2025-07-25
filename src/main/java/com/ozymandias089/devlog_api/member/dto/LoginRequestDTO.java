@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.user.dto;
+package com.ozymandias089.devlog_api.member.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

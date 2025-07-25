@@ -1,6 +1,6 @@
-package com.ozymandias089.devlog_api.user.repository;
+package com.ozymandias089.devlog_api.member.repository;
 
-import com.ozymandias089.devlog_api.user.entity.Member;
+import com.ozymandias089.devlog_api.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

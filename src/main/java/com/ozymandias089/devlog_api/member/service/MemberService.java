@@ -1,16 +1,14 @@
-package com.ozymandias089.devlog_api.user.service;
+package com.ozymandias089.devlog_api.member.service;
 
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
-import com.ozymandias089.devlog_api.user.MemberMapper;
-import com.ozymandias089.devlog_api.user.dto.SignupRequestDTO;
-import com.ozymandias089.devlog_api.user.dto.UserResponseDTO;
-import com.ozymandias089.devlog_api.user.entity.Member;
-import com.ozymandias089.devlog_api.user.repository.MemberRepository;
+import com.ozymandias089.devlog_api.member.MemberMapper;
+import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
+import com.ozymandias089.devlog_api.member.entity.Member;
+import com.ozymandias089.devlog_api.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

@@ -1,8 +1,8 @@
-package com.ozymandias089.devlog_api.user;
+package com.ozymandias089.devlog_api.member;
 
-import com.ozymandias089.devlog_api.user.dto.SignupRequestDTO;
-import com.ozymandias089.devlog_api.user.dto.UserResponseDTO;
-import com.ozymandias089.devlog_api.user.entity.Member;
+import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
+import com.ozymandias089.devlog_api.member.entity.Member;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
