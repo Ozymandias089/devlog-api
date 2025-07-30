@@ -23,16 +23,21 @@ public class MemberService {
         if(repository.findByEmail(requestDTO.getEmail()).isPresent()) {
             throw new DuplicateEmailExcpetion(requestDTO.getEmail());
         }
-        String encodedPassword = passwordEncoder.encode(requestDTO.getPassword());
-        Member member = mapper.toEntity(requestDTO);
-//        member.encodePassword(encodedPassword);
-
+        String encodedPassword = hashPassword(requestDTO.getPassword());
+        String username = generateUsername();
+        Member member = mapper.toEntity(requestDTO, encodedPassword, username);
         Member saved = repository.save(member);
-        return mapper.toResponse(saved, generateUsername());
+
+        return mapper.toResponse(saved, username);
     }
 
     private String generateUsername() {
         int random = (int) (Math.random() * 1_000_000);// todo: include validation logic
         return String.format("User-%06d", random);
     }
+
+    public String hashPassword(String password) {
+        return passwordEncoder.encode(password);
+    }
+
 }

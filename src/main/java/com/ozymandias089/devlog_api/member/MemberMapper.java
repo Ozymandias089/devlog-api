@@ -9,11 +9,12 @@ import java.util.UUID;
 
 @Component
 public class MemberMapper {
-    public Member toEntity(SignupRequestDTO dto) {
+    public Member toEntity(SignupRequestDTO dto, String encodedPassword, String alias) {
         return Member.builder()
                 .email(dto.getEmail())
-                .password(dto.getPassword()) // 암호화 예정
+                .password(encodedPassword)
                 .uuid(UUID.randomUUID())
+                .username(alias)
                 .build();
     }
 
