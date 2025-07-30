@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: devlog-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: devlog
+      MYSQL_USER: devuser
+      MYSQL_PASSWORD: devpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - devlog-network
+
+  redis:
+    image: redis:7.2
+    container_name: devlog-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - devlog-network
+
+  app:
+    build: .
+    container_name: devlog-app
+    depends_on:
+      - mysql
+      - redis
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/devlog
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: devpass
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    networks:
+      - devlog-network
+
+volumes:
+  mysql-data:
+
+networks:
+  devlog-network:
