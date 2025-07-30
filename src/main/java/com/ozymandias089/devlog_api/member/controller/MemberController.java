@@ -1,6 +1,7 @@
 package com.ozymandias089.devlog_api.member.controller;
 
 import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
 import com.ozymandias089.devlog_api.member.service.MemberService;
 import jakarta.validation.Valid;
@@ -18,8 +19,8 @@ public class MemberController {
     private final MemberService memberService;
 
     @PostMapping("/signup")
-    public ResponseEntity<UserResponseDTO> signUp(@RequestBody @Valid SignupRequestDTO signupRequestDTO) {
-        UserResponseDTO responseDTO = memberService.signUp(signupRequestDTO);
+    public ResponseEntity<SignupResponseDTO> signUp(@RequestBody @Valid SignupRequestDTO signupRequestDTO) {
+        SignupResponseDTO responseDTO = memberService.signUp(signupRequestDTO);
         return ResponseEntity.ok(responseDTO);
     }
 }

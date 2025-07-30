@@ -1,8 +1,10 @@
 package com.ozymandias089.devlog_api.member.service;
 
+import com.ozymandias089.devlog_api.auth.jwt.JwtTokenProvider;
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
 import com.ozymandias089.devlog_api.member.MemberMapper;
 import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
 import com.ozymandias089.devlog_api.member.entity.Member;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
@@ -17,18 +19,27 @@ public class MemberService {
     private final MemberRepository repository;
     private final MemberMapper mapper;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
-    public UserResponseDTO signUp(SignupRequestDTO requestDTO) {
-        if(repository.findByEmail(requestDTO.getEmail()).isPresent()) {
-            throw new DuplicateEmailExcpetion(requestDTO.getEmail());
-        }
+    public SignupResponseDTO signUp(SignupRequestDTO requestDTO) {
+        if(repository.findByEmail(requestDTO.getEmail()).isPresent()) throw new DuplicateEmailExcpetion(requestDTO.getEmail());
+
+        // Encode password
         String encodedPassword = hashPassword(requestDTO.getPassword());
+
+        // Random username creation
         String username = generateUsername();
-        Member member = mapper.toEntity(requestDTO, encodedPassword, username);
+
+        // Create / save Member Entity
+        Member member = mapper.toMemberEntity(requestDTO, encodedPassword, username);
         Member saved = repository.save(member);
 
-        return mapper.toResponse(saved, username);
+        // Create JWT AnR Tokens
+        String accessToken = jwtTokenProvider.generateAccessToken(saved.getUuid().toString());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(saved.getUuid().toString());
+
+        return mapper.toSignupResponseDTO(saved.getUuid(), saved.getEmail(), saved.getUsername(), accessToken, refreshToken);
     }
 
     private String generateUsername() {
