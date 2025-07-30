@@ -8,6 +8,7 @@ import com.ozymandias089.devlog_api.member.entity.Member;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,13 +16,17 @@ import org.springframework.stereotype.Service;
 public class MemberService {
     private final MemberRepository repository;
     private final MemberMapper mapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserResponseDTO signUp(SignupRequestDTO requestDTO) {
         if(repository.findByEmail(requestDTO.getEmail()).isPresent()) {
             throw new DuplicateEmailExcpetion(requestDTO.getEmail());
         }
+        String encodedPassword = passwordEncoder.encode(requestDTO.getPassword());
         Member member = mapper.toEntity(requestDTO);
+//        member.encodePassword(encodedPassword);
+
         Member saved = repository.save(member);
         return mapper.toResponse(saved, generateUsername());
     }
