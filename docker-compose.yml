@@ -9,6 +9,7 @@ services:
       MYSQL_DATABASE: devlog
       MYSQL_USER: devuser
       MYSQL_PASSWORD: devpass
+      SPRING_DATASOURCE_DRIVER: com.mysql.cj.jdbc.Driver
     ports:
       - "3306:3306"
     volumes:
@@ -21,6 +22,9 @@ services:
     container_name: devlog-redis
     ports:
       - "6379:6379"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf   # 로컬 redis.conf 마운트
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]  # 설정파일을 사용하도록 명령어 덮어쓰기
     networks:
       - devlog-network
 
@@ -34,6 +38,7 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/devlog
+      SPRING_DATASOURCE_DRIVER: com.mysql.cj.jdbc.Driver
       SPRING_DATASOURCE_USERNAME: devuser
       SPRING_DATASOURCE_PASSWORD: devpass
       SPRING_REDIS_HOST: redis

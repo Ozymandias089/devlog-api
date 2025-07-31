@@ -1,9 +1,11 @@
 package com.ozymandias089.devlog_api.member.dto;
 
 import lombok.Builder;
+import lombok.Getter;
 
 import java.util.UUID;
 
+@Getter
 public class SignupResponseDTO {
     private UUID uuid;
     private String email;

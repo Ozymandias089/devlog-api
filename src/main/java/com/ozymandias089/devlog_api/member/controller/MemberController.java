@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
     private final MemberService memberService;
 
-    @PostMapping("/signup")
+    @PostMapping(value = "/signup", produces = "application/json")
     public ResponseEntity<SignupResponseDTO> signUp(@RequestBody @Valid SignupRequestDTO signupRequestDTO) {
         SignupResponseDTO responseDTO = memberService.signUp(signupRequestDTO);
         return ResponseEntity.ok(responseDTO);

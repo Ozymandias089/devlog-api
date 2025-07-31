@@ -31,41 +31,55 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        log.info("▶ Incoming request: {}", request.getRequestURI());  // 추가
         String requestURI = request.getRequestURI();
-        String bearer = request.getHeader("Authorization");
+        String bearerToken = request.getHeader("Authorization");
 
-        // ✅ 인증 필요 없는 경로는 필터 우회
-        if (requestURI.startsWith("/api/members") || requestURI.startsWith("/auth") || requestURI.startsWith("/public")) {
+        // ⛔ 인증 예외 경로: 정확히 필요한 URI만 허용
+        if (isPermitAllPath(requestURI)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (bearer != null && bearer.startsWith("Bearer ")) {
-            String token = bearer.substring(7);
-            log.debug("Extracted Token: {}", token);
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            String token = bearerToken.substring(7);
+            try {
+                if (jwtTokenProvider.isTokenValid(token) && !jwtTokenProvider.isAccessTokenBlacklisted(token)) {
+                    String subject = jwtTokenProvider.getSubject(token);
+                    String role = jwtTokenProvider.getRoleFromToken(token);
 
-            if (jwtTokenProvider.isTokenValid(token) && !jwtTokenProvider.isAccessTokenBlacklisted(token)) {
-                String subject = jwtTokenProvider.getSubject(token);
+                    Collection<GrantedAuthority> authorities = List.of(
+                            new SimpleGrantedAuthority("ROLE_" + role)
+                    );
 
-                // Role 정보 꺼내기
-                String roleStr = jwtTokenProvider.getRoleFromToken(token);
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(subject, null, authorities);
 
-                // Role → GrantedAuthority 변환
-                Collection<GrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + roleStr)
-                );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                UsernamePasswordAuthenticationToken authenticationToken =
-                        new UsernamePasswordAuthenticationToken(subject, null, authorities);
-
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                log.debug("Authentication set for subject: {}, role: {}", subject, roleStr);
-            } else {
-                log.info("Invalid or Blacklisted JWT Token");
+                    log.debug("[✔️ 인증 성공] Subject: {}, Role: {}", subject, role);
+                } else {
+                    log.warn("[⚠️ 인증 실패] 유효하지 않거나 블랙리스트된 토큰입니다.");
+                }
+            } catch (Exception e) {
+                log.error("[🔥 인증 처리 중 예외 발생] {}", e.getMessage(), e);
+                // 필요하다면 아래처럼 인증 오류 응답을 보낼 수도 있음
+                // response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
             }
+        } else {
+            log.debug("[🔒 인증 헤더 없음] Authorization 헤더가 존재하지 않거나 Bearer 토큰이 아닙니다.");
         }
 
         filterChain.doFilter(request, response);
-    }}
+    }
+
+    /**
+     * 인증 없이 접근 가능한 경로인지 확인하는 메서드
+     */
+    private boolean isPermitAllPath(String uri) {
+        return uri.equals("/api/members/signup") ||
+                uri.startsWith("/auth/") ||
+                uri.startsWith("/public/");
+    }
+}
