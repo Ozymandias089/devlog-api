@@ -1,6 +1,8 @@
 package com.ozymandias089.devlog_api.auth.jwt;
 
+import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.JwtValidationException;
+import com.ozymandias089.devlog_api.global.util.Functions;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -44,11 +46,12 @@ public class JwtTokenProvider {
      * @param uuid The uuid to be included in the token's subject.
      * @return A signed JWT access token string.
      */
-    public String generateAccessToken(String uuid) {
+    public String generateAccessToken(String uuid, Role role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + TimeUnit.MINUTES.toMillis(accessTokenExpirationMinutes));
         String accessToken = Jwts.builder()
                 .subject(uuid)
+                .claim("roles", Functions.roleToString(role))
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
@@ -143,5 +146,20 @@ public class JwtTokenProvider {
 
     public boolean isAccessTokenBlacklisted(String token) {
         return stringRedisTemplate.hasKey("BL:" + token);
+    }
+
+    public String getRoleFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            return claims.get("roles", String.class); // 토큰 발급 시 넣은 claim 이름과 일치해야 함
+        } catch (JwtException | IllegalArgumentException e) {
+            log.error("Failed to extract role from token: {}", token);
+            throw new JwtValidationException("Invalid JWT Token", e);
+        }
     }
 }

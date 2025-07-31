@@ -1,5 +1,6 @@
 package com.ozymandias089.devlog_api.member.entity;
 
+import com.ozymandias089.devlog_api.global.enums.Role;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -33,12 +34,18 @@ public class Member {
     @Column(nullable = false)
     private String username;
 
+    @Getter
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
     @Builder
-    public Member(UUID uuid, String email, String password, String username) {
+    public Member(UUID uuid, String email, String password, String username, Role role) {
         this.uuid = uuid;
         this.email = email;
         this.password = password;
         this.username = username;
+        this.role = role;
     }
 
     public void updateUsername(String newUsername) {

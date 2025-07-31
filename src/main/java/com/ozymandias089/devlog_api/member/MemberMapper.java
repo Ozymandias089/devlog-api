@@ -1,5 +1,6 @@
 package com.ozymandias089.devlog_api.member;
 
+import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
@@ -10,12 +11,13 @@ import java.util.UUID;
 
 @Component
 public class MemberMapper {
-    public Member toMemberEntity(SignupRequestDTO dto, String encodedPassword, String alias) {
+    public Member toMemberEntity(SignupRequestDTO dto, String encodedPassword, String alias, Role role) {
         return Member.builder()
                 .email(dto.getEmail())
                 .password(encodedPassword)
                 .uuid(UUID.randomUUID())
                 .username(alias)
+                .role(role)
                 .build();
     }
 

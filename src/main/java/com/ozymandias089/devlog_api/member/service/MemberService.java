@@ -1,6 +1,7 @@
 package com.ozymandias089.devlog_api.member.service;
 
 import com.ozymandias089.devlog_api.auth.jwt.JwtTokenProvider;
+import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
 import com.ozymandias089.devlog_api.member.MemberMapper;
 import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
@@ -31,12 +32,14 @@ public class MemberService {
         // Random username creation
         String username = generateUsername();
 
+        Role defaultRole = Role.ROLE_USER;
+
         // Create / save Member Entity
-        Member member = mapper.toMemberEntity(requestDTO, encodedPassword, username);
+        Member member = mapper.toMemberEntity(requestDTO, encodedPassword, username, defaultRole);
         Member saved = repository.save(member);
 
         // Create JWT AnR Tokens
-        String accessToken = jwtTokenProvider.generateAccessToken(saved.getUuid().toString());
+        String accessToken = jwtTokenProvider.generateAccessToken(saved.getUuid().toString(), defaultRole);
         String refreshToken = jwtTokenProvider.generateRefreshToken(saved.getUuid().toString());
 
         return mapper.toSignupResponseDTO(saved.getUuid(), saved.getEmail(), saved.getUsername(), accessToken, refreshToken);
