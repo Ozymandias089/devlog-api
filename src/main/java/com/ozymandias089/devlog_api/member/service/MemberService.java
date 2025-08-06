@@ -11,9 +11,11 @@ import com.ozymandias089.devlog_api.member.entity.Member;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -24,7 +26,10 @@ public class MemberService {
 
     @Transactional
     public SignupResponseDTO signUp(SignupRequestDTO requestDTO) {
-        if(repository.findByEmail(requestDTO.getEmail()).isPresent()) throw new DuplicateEmailExcpetion(requestDTO.getEmail());
+        if(repository.findByEmail(requestDTO.getEmail()).isPresent()){
+            log.error("Email {} Already exists.", requestDTO.getEmail());
+            throw new DuplicateEmailExcpetion(requestDTO.getEmail());
+        }
 
         // Encode password
         String encodedPassword = hashPassword(requestDTO.getPassword());
@@ -33,10 +38,12 @@ public class MemberService {
         String username = generateUsername();
 
         Role defaultRole = Role.ROLE_USER;
+        log.info("Default role {} given to username {}", defaultRole, username);
 
         // Create / save Member Entity
         Member member = mapper.toMemberEntity(requestDTO, encodedPassword, username, defaultRole);
         Member saved = repository.save(member);
+        log.info("User information saved to entity.");
 
         // Create JWT AnR Tokens
         String accessToken = jwtTokenProvider.generateAccessToken(saved.getUuid().toString(), defaultRole);
@@ -47,7 +54,9 @@ public class MemberService {
 
     private String generateUsername() {
         int random = (int) (Math.random() * 1_000_000);// todo: include validation logic
-        return String.format("User-%06d", random);
+        String username =  String.format("User-%06d", random);
+        log.info("Username {} created", username);
+        return username;
     }
 
     public String hashPassword(String password) {
