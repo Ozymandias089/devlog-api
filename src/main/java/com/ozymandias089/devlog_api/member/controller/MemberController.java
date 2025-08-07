@@ -24,3 +24,4 @@ public class MemberController {
         return ResponseEntity.ok(responseDTO);
     }
 }
+// todo: 로그인 API, 로그아웃 API, 탈퇴 API, 비밀번호 찾기, 비밀번호 변경, 이메일 인증
