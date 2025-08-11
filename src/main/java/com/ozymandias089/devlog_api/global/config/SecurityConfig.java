@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.auth.config;
+package com.ozymandias089.devlog_api.global.config;
 
 import com.ozymandias089.devlog_api.auth.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;

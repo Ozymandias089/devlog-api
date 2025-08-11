@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.auth.config;
+package com.ozymandias089.devlog_api.global.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
