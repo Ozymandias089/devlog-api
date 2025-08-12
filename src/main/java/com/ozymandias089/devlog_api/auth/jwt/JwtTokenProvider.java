@@ -88,6 +88,11 @@ public class JwtTokenProvider {
         return refreshToken;
     }
 
+    /**
+     * 비밀번호 재설정 토큰을 생성하고 Redis에 저장한다.
+     * @param uuid 사용자 고유 식별자
+     * @return 생성된 JWT 비밀번호 재설정 토큰
+     */
     public String generatePasswordResetToken(String uuid) {
         long passwordResetTokenExpirationMinutes = 30L;
         Instant now = Instant.now();
@@ -115,6 +120,12 @@ public class JwtTokenProvider {
         return token;
     }
 
+    /**
+     * JWT 토큰에서 Claims를 파싱한다.
+     * @param token JWT 토큰 문자열
+     * @return 파싱된 Claims 객체
+     * @throws JwtValidationException 유효하지 않은 토큰일 경우 발생
+     */
     public Claims parseClaims(String token) {
         try {
             return Jwts.parser()
@@ -128,6 +139,11 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * 비밀번호 재설정 토큰인지 유효성 검사한다.
+     * @param token 검사할 JWT 토큰
+     * @return 토큰이 유효하고 타입이 "password_reset"일 경우 true
+     */
     public boolean isPasswordResetTokenValid(String token) {
         try {
             Claims claims = parseClaims(token);
@@ -143,12 +159,24 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * Redis에 저장된 비밀번호 재설정 토큰과 비교하여 일치하는지 확인한다.
+     * @param uuid 사용자 고유 식별자
+     * @param token 비교할 토큰
+     * @return 저장된 토큰과 일치하면 true
+     */
     public boolean isPasswordResetTokenStored(String uuid, String token) {
         String redisKey = "PRT:" + uuid;
         String storedToken = stringRedisTemplate.opsForValue().get(redisKey);
         return token.equals(storedToken);
     }
 
+    /**
+     * JWT 토큰에서 subject(사용자 식별자)를 추출한다.
+     * @param token JWT 토큰 문자열
+     * @return 토큰 내 subject 값
+     * @throws JwtValidationException 유효하지 않은 토큰일 경우 발생
+     */
     public String getSubject(String token) {
         try {
             return Jwts.parser()
@@ -163,6 +191,11 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * JWT 토큰의 기본적인 유효성을 검사한다.
+     * @param token 검사할 JWT 토큰
+     * @return 토큰이 유효하면 true
+     */
     public boolean isTokenValid(String token) {
         try {
             Jwts.parser()
@@ -176,19 +209,39 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * UUID에 저장된 Refresh Token과 요청받은 토큰이 일치하는지 검증한다.
+     * @param uuid 사용자 고유 식별자
+     * @param requestToken 요청받은 Refresh Token
+     * @return 저장된 토큰과 일치하면 true
+     */
     public boolean validateRefreshToken(String uuid, String requestToken) {
         String storedToken = getRefreshToken(uuid);
         return storedToken != null && storedToken.equals(requestToken);
     }
 
+    /**
+     * UUID에 해당하는 Refresh Token을 삭제한다.
+     * @param uuid 사용자 고유 식별자
+     */
     public void deleteRefreshToken(String uuid) {
         stringRedisTemplate.delete("RT:" + uuid);
     }
 
+    /**
+     * UUID에 저장된 Refresh Token을 조회한다.
+     * @param uuid 사용자 고유 식별자
+     * @return 저장된 Refresh Token 문자열 또는 null
+     */
     public String getRefreshToken(String uuid) {
         return stringRedisTemplate.opsForValue().get("RT:" + uuid);
     }
 
+    /**
+     * 액세스 토큰을 블랙리스트에 등록하여 만료까지 유효하지 않도록 처리한다.
+     * @param token 블랙리스트에 추가할 액세스 토큰
+     * @param expirationMillis 토큰 만료까지 남은 시간(밀리초)
+     */
     public void blacklistAccessToken(String token, long expirationMillis) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
@@ -205,10 +258,21 @@ public class JwtTokenProvider {
         }
     }
 
+    /**
+     * 액세스 토큰이 블랙리스트에 존재하는지 확인한다.
+     * @param token 확인할 액세스 토큰
+     * @return 블랙리스트에 존재하면 true
+     */
     public boolean isAccessTokenBlacklisted(String token) {
         return stringRedisTemplate.hasKey("BL:" + token);
     }
 
+    /**
+     * JWT 토큰에서 사용자 권한(role) 정보를 추출한다.
+     * @param token JWT 토큰 문자열
+     * @return 토큰 내 roles claim 값
+     * @throws JwtValidationException 유효하지 않은 토큰일 경우 발생
+     */
     public String getRoleFromToken(String token) {
         try {
             Claims claims = Jwts.parser()
