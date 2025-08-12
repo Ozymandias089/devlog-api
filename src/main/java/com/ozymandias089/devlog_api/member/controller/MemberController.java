@@ -1,10 +1,8 @@
 package com.ozymandias089.devlog_api.member.controller;
 
-import com.ozymandias089.devlog_api.member.dto.request.LoginRequestDTO;
-import com.ozymandias089.devlog_api.member.dto.request.PasswordResetConfirmRequestDTO;
-import com.ozymandias089.devlog_api.member.dto.request.PasswordResetRequestDTO;
-import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.request.*;
 import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.response.PasswordValidationResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +23,13 @@ public class MemberController {
     @Operation(summary = "회원가입", description = "회원 정보를 입력받아 새로운 사용자를 등록하고 등록된 회원정보를 반환합니다.")
     public ResponseEntity<SignupResponseDTO> signUp(@RequestBody @Valid SignupRequestDTO signupRequestDTO) {
         SignupResponseDTO responseDTO = memberService.signUp(signupRequestDTO);
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PostMapping(value = "/password/validate", produces = "application/json")
+    @Operation(summary = "Validate Password", description = "비밀번호 유효성을 검사합니다.")
+    public ResponseEntity<PasswordValidationResponseDTO> vaidatePassword(@RequestBody @Valid PasswordValidationRequestDTO requestDTO) {
+        PasswordValidationResponseDTO responseDTO = memberService.validatePassword(requestDTO.getPassword());
         return ResponseEntity.ok(responseDTO);
     }
 

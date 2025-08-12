@@ -12,10 +12,4 @@ public class PasswordResetConfirmRequestDTO {
     @NotBlank
     @Getter
     private String newPassword;
-
-    @Builder
-    public PasswordResetConfirmRequestDTO(String resetToken, String newPassword) {
-        this.resetToken = resetToken;
-        this.newPassword = newPassword;
-    }
 }

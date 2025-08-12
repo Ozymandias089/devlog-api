@@ -10,6 +10,7 @@ import com.ozymandias089.devlog_api.member.dto.request.LoginRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.request.PasswordResetConfirmRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.response.PasswordValidationResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.entity.Member;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
@@ -21,6 +22,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static com.ozymandias089.devlog_api.global.util.RegexPatterns.EMAIL_REGEX;
@@ -79,6 +82,49 @@ public class MemberService {
         String refreshToken = jwtTokenProvider.generateRefreshToken(saved.getUuid().toString());
 
         return mapper.toSignupResponseDTO(saved.getUuid(), saved.getEmail(), saved.getUsername(), accessToken, refreshToken);
+    }
+
+    /**
+     * Validates a password against predefined complexity rules.
+     * <p>
+     * Rules:
+     * <ul>
+     *     <li>Must not be null or blank</li>
+     *     <li>Must be at least 8 characters long</li>
+     *     <li>Must contain at least one uppercase letter (A-Z)</li>
+     *     <li>Must contain at least one lowercase letter (a-z)</li>
+     *     <li>Must contain at least one digit (0-9)</li>
+     *     <li>Must contain at least one special character (!@#$%^&*())</li>
+     * </ul>
+     *
+     * @param password the password to validate
+     * @return a {@link PasswordValidationResponseDTO} containing validation status and error messages
+     */
+    public PasswordValidationResponseDTO validatePassword(String password) {
+        List<String> errors = new ArrayList<>();
+
+        if (password == null || password.isBlank()) {
+            errors.add("Password cannot be empty.");
+        }
+        if (password.length() < 8) {
+            errors.add("Password must be at least 8 characters long.");
+        }
+        if (!password.matches(".*[A-Z].*")) {
+            errors.add("Password must contain at least one uppercase letter.");
+        }
+        if (!password.matches(".*[a-z].*")) {
+            errors.add("Password must contain at least one lowercase letter.");
+        }
+        if (!password.matches(".*\\d.*")) {
+            errors.add("Password must contain at least one digit.");
+        }
+        if (!password.matches(".*[!@#$%^&*()].*")) {
+            errors.add("Password must contain at least one special character (!@#$%^&*()).");
+        }
+
+        boolean valid = errors.isEmpty();
+
+        return new PasswordValidationResponseDTO(valid, errors);
     }
 
     /**
