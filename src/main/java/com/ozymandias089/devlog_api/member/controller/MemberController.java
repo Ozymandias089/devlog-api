@@ -10,7 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.nio.file.attribute.UserPrincipal;
 
 @RestController
 @RequestMapping("/api/members")
@@ -47,6 +50,20 @@ public class MemberController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @PostMapping("/logout")
+    @Operation(summary = "Logout", description = "로그아웃하고 Refresh Token을 무효화합니다.")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestHeader("Authorization") String authorizationHeader) {
+        memberService.logout(userPrincipal.getName(), authorizationHeader);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/unregister")
+    @Operation(summary = "Delete Account", description = "회원 탈퇴를 진행합니다.")
+    public ResponseEntity<Void> unregister(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid PasswordCheckRequestDTO requestDTO) {
+        memberService.deleteMember(userPrincipal.getName(), requestDTO.getPassword());
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping(value = "/password-reset/request", produces = "application/json")
     @Operation(summary = "Request Password Reset", description = "회원 이메일을 입력받아 비밀번호 재설정 링크를 이메일로 전송합니다.")
     public ResponseEntity<Void> requestPasswordReset(@RequestBody @Valid PasswordResetRequestDTO requestDTO) {
@@ -68,4 +85,3 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 }
-// todo:로그아웃 API, 탈퇴 API, 비밀번호 찾기, 비밀번호 변경

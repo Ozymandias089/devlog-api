@@ -1,6 +1,6 @@
 package com.ozymandias089.devlog_api.global.config;
 
-import com.ozymandias089.devlog_api.auth.jwt.JwtAuthenticationFilter;
+import com.ozymandias089.devlog_api.member.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

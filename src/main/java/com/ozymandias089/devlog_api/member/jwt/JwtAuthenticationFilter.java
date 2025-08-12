@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.auth.jwt;
+package com.ozymandias089.devlog_api.member.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

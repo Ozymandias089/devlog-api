@@ -1,6 +1,6 @@
 package com.ozymandias089.devlog_api.member.service;
 
-import com.ozymandias089.devlog_api.auth.jwt.JwtTokenProvider;
+import com.ozymandias089.devlog_api.member.jwt.JwtTokenProvider;
 import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
 import com.ozymandias089.devlog_api.global.exception.InvalidCredentialsException;
@@ -159,6 +159,60 @@ public class MemberService {
                 .refreshToken(refreshToken)
                 .build();
     }
+
+    /**
+     * 로그아웃 처리를 수행합니다.
+     * <p>
+     * - Authorization 헤더에서 액세스 토큰을 추출하고 유효성을 검사합니다.
+     * - 해당 UUID의 리프레시 토큰을 삭제합니다.
+     * - 액세스 토큰을 블랙리스트에 등록하여 즉시 만료 처리합니다.
+     *
+     * @param uuid 사용자의 고유 식별자(UUID 문자열)
+     * @param authorizationHeader HTTP 요청 헤더에서 받은 Authorization 값 (Bearer 토큰 형식)
+     * @throws IllegalArgumentException Authorization 헤더가 없거나 형식이 올바르지 않을 경우 발생
+     */
+    public void logout(String uuid, String authorizationHeader) {
+        // 1. Validate Header
+        String token = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+        } else {
+            // 토큰 없거나 잘못된 형식일 때 처리 (예외 던지거나 로그 남기기)
+            throw new IllegalArgumentException("Invalid Authorization header");
+        }
+        // 2. Delete Refresh Token
+        jwtTokenProvider.deleteRefreshToken(uuid);
+        // 3. Blacklist Access Token
+        jwtTokenProvider.blacklistAccessToken(token);
+    }
+
+    /**
+     * 회원 탈퇴를 수행합니다.
+     * <p>
+     * - UUID로 회원을 조회하고, 입력받은 원문 비밀번호와 저장된 비밀번호를 비교하여 검증합니다.
+     * - 비밀번호가 일치하지 않으면 인증 예외를 발생시킵니다.
+     * - 회원 정보를 삭제하고, 관련된 리프레시 토큰을 삭제합니다.
+     * - 액세스 토큰을 블랙리스트에 등록하여 즉시 만료 처리합니다.
+     *
+     * @param uuid 회원의 고유 식별자(UUID 문자열)
+     * @param rawPassword 회원 탈퇴를 위한 본인 확인용 비밀번호 (원문)
+     * @throws RuntimeException 회원을 찾을 수 없을 경우 발생
+     * @throws InvalidCredentialsException 비밀번호가 일치하지 않을 경우 발생
+     */
+    @Transactional
+    public void deleteMember(String uuid, String rawPassword){
+        Member member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new RuntimeException("No Such member found with the provided token"));
+        if (!passwordEncoder.matches(rawPassword, member.getPassword())) {
+            throw new InvalidCredentialsException("Invalid password");
+        }
+
+        repository.delete(member);
+
+        // 관련 토큰 삭제 (리프레시 토큰, 블랙리스트 등록)
+        jwtTokenProvider.deleteRefreshToken(uuid);  // 리프레시 토큰 삭제
+        jwtTokenProvider.blacklistAccessToken(uuid);
+    }
+
     /**
      * 이메일 형식과 중복 여부를 검증
      *

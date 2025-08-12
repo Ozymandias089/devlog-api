@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.auth.jwt;
+package com.ozymandias089.devlog_api.member.jwt;
 
 import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.JwtValidationException;
@@ -239,10 +239,10 @@ public class JwtTokenProvider {
 
     /**
      * 액세스 토큰을 블랙리스트에 등록하여 만료까지 유효하지 않도록 처리한다.
+     *
      * @param token 블랙리스트에 추가할 액세스 토큰
-     * @param expirationMillis 토큰 만료까지 남은 시간(밀리초)
      */
-    public void blacklistAccessToken(String token, long expirationMillis) {
+    public void blacklistAccessToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
