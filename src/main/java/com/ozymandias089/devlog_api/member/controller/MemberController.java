@@ -27,7 +27,7 @@ public class MemberController {
     }
 
     @GetMapping("/check-email")
-    @Operation(summary = "Check Email Duplication", description = "Returns True if email is already taken")
+    @Operation(summary = "Check Email Duplication", description = "Returns true if the email is valid and available for registration.")
     public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
         boolean result = memberService.isEmailValidAndAvailable(email);
         return ResponseEntity.ok(result);
@@ -40,4 +40,4 @@ public class MemberController {
         return ResponseEntity.ok(responseDTO);
     }
 }
-// todo: 로그인 API, 로그아웃 API, 탈퇴 API, 비밀번호 찾기, 비밀번호 변경, 이메일 인증
+// todo:로그아웃 API, 탈퇴 API, 비밀번호 찾기, 비밀번호 변경
