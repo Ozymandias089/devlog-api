@@ -9,10 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/members")
@@ -26,6 +23,13 @@ public class MemberController {
     public ResponseEntity<SignupResponseDTO> signUp(@RequestBody @Valid SignupRequestDTO signupRequestDTO) {
         SignupResponseDTO responseDTO = memberService.signUp(signupRequestDTO);
         return ResponseEntity.ok(responseDTO);
+    }
+
+    @GetMapping("/check-email")
+    @Operation(summary = "Check Email Duplication", description = "Returns True if email is already taken")
+    public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
+        boolean result = memberService.isEmailValidAndAvailable(email);
+        return ResponseEntity.ok(result);
     }
 }
 // todo: 로그인 API, 로그아웃 API, 탈퇴 API, 비밀번호 찾기, 비밀번호 변경, 이메일 인증
