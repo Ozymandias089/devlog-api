@@ -3,9 +3,12 @@ package com.ozymandias089.devlog_api.member.service;
 import com.ozymandias089.devlog_api.auth.jwt.JwtTokenProvider;
 import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
+import com.ozymandias089.devlog_api.global.exception.InvalidCredentialsException;
 import com.ozymandias089.devlog_api.member.MemberMapper;
-import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
-import com.ozymandias089.devlog_api.member.dto.SignupResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.request.LoginRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.entity.Member;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
@@ -13,8 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.regex.Pattern;
 
 import static com.ozymandias089.devlog_api.global.util.RegexPatterns.EMAIL_REGEX;
 
@@ -71,6 +72,38 @@ public class MemberService {
         return mapper.toSignupResponseDTO(saved.getUuid(), saved.getEmail(), saved.getUsername(), accessToken, refreshToken);
     }
 
+    /**
+     * Performs the login process by validating user credentials.
+     *
+     * This method:
+     * <ul>
+     *   <li>Fetches the member entity by email.</li>
+     *   <li>Verifies the provided password against the stored hashed password.</li>
+     *   <li>Generates JWT access and refresh tokens upon successful authentication.</li>
+     * </ul>
+     *
+     * @param requestDTO The login request data transfer object containing email and password.
+     * @return A {@link LoginResponseDTO} containing the generated access and refresh tokens.
+     * @throws InvalidCredentialsException if the email does not exist or the password is incorrect.
+     */
+    @Transactional
+    public LoginResponseDTO login(LoginRequestDTO requestDTO){
+        Member member = repository.findByEmail(requestDTO.getEmail()).orElseThrow(() -> new InvalidCredentialsException("Invalid email or password."));
+
+        if (!passwordEncoder.matches(requestDTO.getPassword(), member.getPassword())) {
+            log.warn("Invalid password for user: {}", member.getEmail());
+            throw new InvalidCredentialsException("Invalid email or password");
+        }
+
+        // Create JWT AnR Tokens
+        String accessToken = jwtTokenProvider.generateAccessToken(member.getUuid().toString(), member.getRole());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(member.getUuid().toString());
+
+        return LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
     /**
      * 이메일 형식과 중복 여부를 검증
      *

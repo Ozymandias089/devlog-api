@@ -1,9 +1,9 @@
 package com.ozymandias089.devlog_api.member;
 
 import com.ozymandias089.devlog_api.global.enums.Role;
-import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
-import com.ozymandias089.devlog_api.member.dto.SignupResponseDTO;
-import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.response.UserResponseDTO;
 import com.ozymandias089.devlog_api.member.entity.Member;
 import org.springframework.stereotype.Component;
 

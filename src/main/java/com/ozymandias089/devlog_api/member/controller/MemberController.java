@@ -1,8 +1,9 @@
 package com.ozymandias089.devlog_api.member.controller;
 
-import com.ozymandias089.devlog_api.member.dto.SignupRequestDTO;
-import com.ozymandias089.devlog_api.member.dto.SignupResponseDTO;
-import com.ozymandias089.devlog_api.member.dto.UserResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.request.LoginRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +31,13 @@ public class MemberController {
     public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
         boolean result = memberService.isEmailValidAndAvailable(email);
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping(value = "/login", produces = "application/json")
+    @Operation(summary = "Login", description = "Logs in to service. Produces Refresh and Access Tokens")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO requestDTO) {
+        LoginResponseDTO responseDTO = memberService.login(requestDTO);
+        return ResponseEntity.ok(responseDTO);
     }
 }
 // todo: 로그인 API, 로그아웃 API, 탈퇴 API, 비밀번호 찾기, 비밀번호 변경, 이메일 인증

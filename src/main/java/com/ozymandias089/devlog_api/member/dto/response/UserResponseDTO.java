@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.member.dto;
+package com.ozymandias089.devlog_api.member.dto.response;
 
 import lombok.Builder;
 
