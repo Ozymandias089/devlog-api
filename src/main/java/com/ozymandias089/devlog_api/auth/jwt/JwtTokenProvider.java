@@ -88,6 +88,67 @@ public class JwtTokenProvider {
         return refreshToken;
     }
 
+    public String generatePasswordResetToken(String uuid) {
+        long passwordResetTokenExpirationMinutes = 30L;
+        Instant now = Instant.now();
+        Instant expiryDate = now.plusSeconds(TimeUnit.MINUTES.toSeconds(passwordResetTokenExpirationMinutes));
+
+        String token = Jwts.builder()
+                .subject(uuid)
+                .claim("type", "password_reset")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiryDate))
+                .signWith(secretKey)
+                .compact();
+
+        log.info("Password Reset Token Created for uuid: {}", uuid);
+
+        String redisKey = "PRT:" + uuid;
+        try {
+            stringRedisTemplate.opsForValue().set(redisKey, token, passwordResetTokenExpirationMinutes, TimeUnit.MINUTES);
+            log.info("Password Reset Token stored in Redis for uuid: {}", uuid);
+        } catch (Exception e) {
+            log.error("Failed to store password reset token for uuid {}: {}", uuid, e.getMessage(), e);
+            throw new JwtValidationException("Failed to store Password Reset Token", e);
+        }
+
+        return token;
+    }
+
+    public Claims parseClaims(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
+            throw new JwtValidationException("Invalid JWT token", e);
+        }
+    }
+
+    public boolean isPasswordResetTokenValid(String token) {
+        try {
+            Claims claims = parseClaims(token);
+
+            String type = claims.get("type", String.class);
+            if (!"password_reset".equals(type)) {
+                return false;
+            }
+
+            return true;
+        } catch (JwtValidationException e) {
+            return false;
+        }
+    }
+
+    public boolean isPasswordResetTokenStored(String uuid, String token) {
+        String redisKey = "PRT:" + uuid;
+        String storedToken = stringRedisTemplate.opsForValue().get(redisKey);
+        return token.equals(storedToken);
+    }
+
     public String getSubject(String token) {
         try {
             return Jwts.parser()

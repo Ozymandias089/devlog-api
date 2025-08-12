@@ -4,18 +4,24 @@ import com.ozymandias089.devlog_api.auth.jwt.JwtTokenProvider;
 import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
 import com.ozymandias089.devlog_api.global.exception.InvalidCredentialsException;
+import com.ozymandias089.devlog_api.global.exception.JwtValidationException;
 import com.ozymandias089.devlog_api.member.MemberMapper;
 import com.ozymandias089.devlog_api.member.dto.request.LoginRequestDTO;
+import com.ozymandias089.devlog_api.member.dto.request.PasswordResetConfirmRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.entity.Member;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
+import io.jsonwebtoken.Claims;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 import static com.ozymandias089.devlog_api.global.util.RegexPatterns.EMAIL_REGEX;
 
@@ -27,6 +33,9 @@ public class MemberService {
     private final MemberMapper mapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
+    @Value("${app.frontend.password-reset-url}")
+    private String passwordResetUrl;
 
     /**
      * Handles the full member signup process.
@@ -129,6 +138,81 @@ public class MemberService {
     }
 
     /**
+     * 비밀번호 재설정 요청을 처리한다.
+     * - 이메일 존재 여부 확인
+     * - 재설정 토큰 생성
+     * - 재설정 링크 포함 이메일 발송
+     *
+     * @param email 비밀번호 재설정을 요청한 이메일 주소
+     * @throws IllegalArgumentException 이메일이 등록되어 있지 않은 경우
+     */
+    public void requestPasswordReset(String email) {
+        Member member = repository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("No Account found with the provided email"));
+        String resetToken = jwtTokenProvider.generatePasswordResetToken(member.getUuid().toString());
+        String resetURL = passwordResetUrl + "?token=" + resetToken;
+        emailService.sendPasswordResetEmail(email, resetURL);
+    }
+
+    /**
+     * Validates the given password reset token by checking its signature, expiration,
+     * and whether it is stored in Redis.
+     *
+     * @param token the JWT password reset token to validate
+     * @return true if the token is valid and currently stored; false otherwise
+     */
+    public boolean isPasswordResetTokenValid(String token) {
+        if (!jwtTokenProvider.isPasswordResetTokenValid(token)) return false;
+
+        Claims claims = jwtTokenProvider.parseClaims(token);
+        String uuid = claims.getSubject();
+
+        return jwtTokenProvider.isPasswordResetTokenStored(uuid, token);
+    }
+
+    /**
+     * Resets the member's password based on a valid password reset token and new password.
+     * <p>
+     * This method performs the following steps:
+     * <ul>
+     *     <li>Validates and parses the JWT token from the request DTO.</li>
+     *     <li>Verifies that the token is of type "password_reset".</li>
+     *     <li>Extracts the member UUID from the token's subject.</li>
+     *     <li>Retrieves the member entity and updates the password with an encrypted value.</li>
+     *     <li>Saves the updated member entity to the repository.</li>
+     *     <li>Deletes any existing refresh tokens associated with the member to invalidate sessions.</li>
+     * </ul>
+     *
+     * @param requestDTO the DTO containing the reset token and new password
+     * @throws JwtValidationException if the token type is invalid
+     * @throws IllegalArgumentException if the member cannot be found by UUID
+     */
+    @Transactional
+    public void resetPassword(PasswordResetConfirmRequestDTO requestDTO) {
+        // 1. Validate Tokens and parse claims
+        Claims claims = jwtTokenProvider.parseClaims(requestDTO.getResetToken());
+
+        // 2. Check Token types
+        String type = claims.get("type", String.class);
+        if (!"password_reset".equals(type)) throw new JwtValidationException("Invalid Token Type");
+
+        // 3. Extract UUID
+        UUID uuid = UUID.fromString(claims.getSubject());
+
+        // 4. Check Members
+        Member member = repository.findByUuid(uuid).orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        // 5. Encrypt and save password
+        String encryptedPassword = hashPassword(requestDTO.getNewPassword());
+        member.updatePassword(encryptedPassword);
+        repository.save(member);
+
+        // 6. Delete existing refreshToken to invalidate session
+        jwtTokenProvider.deleteRefreshToken(uuid.toString());
+
+        log.info("Password reset successful for UUID: {}.", uuid);
+    }
+
+    /**
      * Checks if the given email is valid in format and not already registered.
      *
      * @param email The email address to check
@@ -144,6 +228,13 @@ public class MemberService {
         return false;
     }
 
+    /**
+     * Generates a unique username in the format "User-xxxxxx", where 'xxxxxx' is a zero-padded
+     * random 6-digit number. The method ensures that the generated username does not already
+     * exist in the repository.
+     *
+     * @return a unique username string
+     */
     private String generateUsername() {
         String username;
         do {
@@ -153,6 +244,12 @@ public class MemberService {
         return username;
     }
 
+    /**
+     * Hashes the given plain text password using the configured PasswordEncoder.
+     *
+     * @param password the plain text password to be hashed
+     * @return the encoded (hashed) password string
+     */
     public String hashPassword(String password) {
         return passwordEncoder.encode(password);
     }

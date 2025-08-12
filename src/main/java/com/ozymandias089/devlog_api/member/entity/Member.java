@@ -54,4 +54,7 @@ public class Member {
         this.username = newUsername;
     }
 
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+    }
 }
