@@ -125,6 +125,28 @@ public class MemberController {
     }
 
     /**
+     * Updates the nickname (username) of the currently authenticated member.
+     * <p>
+     * The member is identified through the {@link UserPrincipal} extracted from the JWT token.
+     * The new username is provided via a {@link UsernameUpdateRequestDTO} request body.
+     * </p>
+     *
+     * @param userPrincipal     The authenticated user's principal, containing their UUID.
+     * @param updateRequestDTO  DTO containing the new username to update.
+     * @return {@link ResponseEntity} with status 200 OK if the update is successful.
+     */
+    @PatchMapping
+    @Operation(summary = "Update Username", description = "닉네임을 업데이트합니다.")
+    public ResponseEntity<Void> updateUsername(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid UsernameUpdateRequestDTO updateRequestDTO) {
+        memberService.updateUsername(userPrincipal.getName(), updateRequestDTO.getNewUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    /***********************************************************
+     *                Password Reset Pipeline                  *
+     ***********************************************************/
+
+    /**
      * Requests a password reset link for the given email.
      *
      * @param requestDTO the DTO containing the registered email

@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.ozymandias089.devlog_api.global.util.RegexPatterns.EMAIL_REGEX;
+import static com.ozymandias089.devlog_api.global.util.RegexPatterns.USERNAME_REGEX;
 
 @Slf4j
 @Service
@@ -235,6 +237,32 @@ public class MemberService {
 
         log.info("Email {} is valid and available", email);
         return true;
+    }
+
+    /**
+     * Updates the username of a member identified by their UUID.
+     * <p>
+     * This method validates the provided new username against a predefined format
+     * using {@code USERNAME_REGEX}, ensures it is not blank or identical to the current one,
+     * and then updates it in the database.
+     * </p>
+     *
+     * @param uuid        The unique UUID of the member as a string.
+     * @param newUsername The new username to set for the member.
+     * @throws IllegalArgumentException        if the username is null, blank, or does not match the regex format.
+     * @throws InvalidCredentialsException     if no account exists for the given UUID.
+     */
+    @Transactional
+    public void updateUsername(String uuid, String newUsername) {
+        if (newUsername == null || newUsername.isBlank() || !USERNAME_REGEX.matcher(newUsername).matches())
+            throw new IllegalArgumentException("Invalid Username format");
+
+        Member member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new InvalidCredentialsException("No Account found with the provided UUID"));
+
+        if (newUsername.equals(member.getUsername())) return;
+
+        member.updateUsername(newUsername);
+        repository.save(member);
     }
 
     /**
