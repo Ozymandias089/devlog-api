@@ -1,166 +1,130 @@
-# Devlog API - 사용자 인증 시스템
+# Devlog API
 
-`Devlog API`는 개발자 블로그 시스템의 사용자 인증 및 계정 관리를 위한 Spring Boot 기반 RESTful API입니다.
+Spring Boot 기반의 RESTful API 서버로, 회원 관리 및 인증 기능을 제공합니다.  
+JWT 기반 인증과 Redis를 활용한 세션/토큰 관리를 지원하며, Docker Compose로 MySQL과 Redis 환경을 손쉽게 구성할 수 있습니다.
 
-## ✅ 기술 스택
+---
 
+## 🚀 기술 스택
+
+**Backend**
 - Java 24
-- Spring Boot 3.x
+- Spring Boot 3.5.4
 - Spring Data JPA
-- H2 / MySQL (설정에 따라)
+- Spring Security
+- Spring Validation
+- Springdoc OpenAPI (Swagger UI)
+- JWT (io.jsonwebtoken)
 - Lombok
-- Jakarta Validation
-- REST API
+
+**Database / Cache**
+- MySQL 8.0
+- Redis 7.2
+
+**Infra / Build**
+- Docker, Docker Compose
+- Gradle
 
 ---
 
-## 📌 요구사항 (회원가입)
+## 📂 프로젝트 구조
 
-| 항목           | 내용                                                                 |
-|----------------|----------------------------------------------------------------------|
-| 이메일 중복 검사 | 이미 가입된 이메일로는 회원가입할 수 없습니다.                        |
-| UUID 발급       | 회원 고유 식별자로 UUID를 자동 생성합니다.                             |
-| Username 자동 생성 | 가입 시 `user-랜덤숫자` 형식의 사용자명을 자동으로 생성합니다.         |
-| 비밀번호 처리    | 현재는 평문 저장. 이후 BCrypt 암호화 방식으로 개선 예정입니다.            |
-
----
-
-## 🚀 회원가입 API 명세서
-
-### `POST /api/members/signup`
-
-회원가입을 위한 API입니다.
-
-#### ✅ Request
-
-```json
-POST /api/members/signup
-Content-Type: application/json
-
-{
-  "email": "example@example.com",
-  "password": "plainpassword"
-}
-```
-좋아, 아래는 README.md 파일 예시야.
-이 예시는 너의 회원가입 API와 관련된 현재 코드 구조 및 요구사항을 기반으로 작성된 것이며,
-앞으로 다른 기능(로그인, 비밀번호 변경 등)이 추가되면 확장 가능하게 작성되어 있어.
-
----
-
-
-# Devlog API - 사용자 인증 시스템
-
-`Devlog API`는 개발자 블로그 시스템의 사용자 인증 및 계정 관리를 위한 Spring Boot 기반 RESTful API입니다.
-
-## ✅ 기술 스택
-
-- Java 17
-- Spring Boot 3.x
-- Spring Data JPA
-- H2 / MySQL (설정에 따라)
-- Lombok
-- Jakarta Validation
-- REST API
-
----
-
-## 📌 요구사항 (회원가입)
-
-| 항목           | 내용                                                                 |
-|----------------|----------------------------------------------------------------------|
-| 이메일 중복 검사 | 이미 가입된 이메일로는 회원가입할 수 없습니다.                        |
-| UUID 발급       | 회원 고유 식별자로 UUID를 자동 생성합니다.                             |
-| Username 자동 생성 | 가입 시 `user-랜덤숫자` 형식의 사용자명을 자동으로 생성합니다.         |
-| 비밀번호 처리    | 현재는 평문 저장. 이후 BCrypt 암호화 방식으로 개선 예정입니다.            |
-
----
-
-## 🚀 회원가입 API 명세서
-
-### `POST /api/members/signup`
-
-회원가입을 위한 API입니다.
-
-#### ✅ Request
-
-```json
-POST /api/members/signup
-Content-Type: application/json
-
-{
-  "email": "example@example.com",
-  "password": "plainpassword"
-}
-```
-
-🔐 Validation
-	•	email: 이메일 형식 + 필수 값
-	•	password: 최소 1자 이상 + 필수 값
-
-✅ Response (201 Created)
-```json
-{
-  "uuid": "ff4a3081-f9d7-4c69-b6a1-48292a3edb11",
-  "email": "example@example.com",
-  "username": "user-329845"
-}
-```
-❌ Error Response (400 Bad Request)
-```json
-"This email already exists."
+```plaintext
+src
+ └─ main
+     ├─ java/com/ozymandias089/devlog_api
+     │   ├─ DevlogApiApplication.java         # Spring Boot 메인 실행 클래스
+     │   ├─ global                            # 전역 설정, 공용 유틸, 예외 등
+     │   │   ├─ config                        # 전역 설정 클래스
+     │   │   │   ├─ RedisConfig.java
+     │   │   │   ├─ SecurityConfig.java
+     │   │   │   └─ SwaggerConfig.java
+     │   │   ├─ enums                         # 전역 Enum
+     │   │   │   └─ Role.java
+     │   │   ├─ exception                     # 전역 예외 클래스
+     │   │   │   ├─ DuplicateEmailExcpetion.java
+     │   │   │   ├─ InvalidCredentialsException.java
+     │   │   │   └─ JwtValidationException.java
+     │   │   └─ util                          # 공용 유틸리티
+     │   │       ├─ Functions.java
+     │   │       └─ RegexPatterns.java
+     │   ├─ member                            # Member(회원) 도메인
+     │   │   ├─ controller                    # REST API 컨트롤러
+     │   │   │   └─ MemberController.java
+     │   │   ├─ dto                           # 요청/응답 DTO
+     │   │   │   ├─ request
+     │   │   │   │   ├─ LoginRequestDTO.java
+     │   │   │   │   ├─ PasswordCheckRequestDTO.java
+     │   │   │   │   ├─ PasswordResetConfirmRequestDTO.java
+     │   │   │   │   ├─ PasswordResetRequestDTO.java
+     │   │   │   │   ├─ PasswordValidationRequestDTO.java
+     │   │   │   │   └─ SignupRequestDTO.java
+     │   │   │   └─ response
+     │   │   │       ├─ LoginResponseDTO.java
+     │   │   │       ├─ PasswordValidationResponseDTO.java
+     │   │   │       ├─ SignupResponseDTO.java
+     │   │   │       └─ UserResponseDTO.java
+     │   │   ├─ entity                        # JPA 엔티티
+     │   │   │   └─ Member.java
+     │   │   ├─ jwt                           # JWT 관련 구성
+     │   │   │   ├─ JwtAuthenticationFilter.java
+     │   │   │   └─ JwtTokenProvider.java
+     │   │   ├─ MemberMapper.java             # DTO ↔ Entity 매핑
+     │   │   ├─ repository                    # 데이터 접근 계층
+     │   │   │   └─ MemberRepository.java
+     │   │   └─ service                       # 비즈니스 로직
+     │   │       ├─ EmailService.java
+     │   │       └─ MemberService.java
+     │   └─ post                              # (추가 구현 예정 도메인)
+     └─ resources
+         ├─ application.properties            # 환경 설정
+         ├─ static                            # 정적 리소스(css, js 등)
+         └─ templates                         # Thymeleaf 템플릿
 ```
 
 ---
 
-🛠 프로젝트 구조 (일부)
+## 📜 주요 기능
+- [ ] 회원가입
+- [ ] 로그인 / 로그아웃
+- [ ] 비밀번호 재설정
+- [ ] 이메일 인증
+- [ ] JWT 기반 인증 / 인가
+- [ ] Redis를 활용한 토큰 관리
+
+---
+
+## 🛠️ 실행 방법
+
+### 1. Docker Compose 실행
+```bash
+docker-compose up -d
 ```
-com.ozymandias089.devlog_api
-├── user
-│   ├── controller
-│   │   └── MemberController.java
-│   ├── dto
-│   │   ├── SignupRequestDTO.java
-│   │   └── UserResponseDTO.java
-│   ├── entity
-│   │   └── Member.java
-│   ├── repository
-│   │   └── MemberRepository.java
-│   └── service
-│       └── MemberService.java
-├── exception
-│   ├── EmailAlreadyExistsException.java
-│   └── GlobalExceptionHandler.java
-└── ...
+- MySQL, Redis, 애플리케이션 컨테이너가 함께 실행됩니다.
+- 기본 포트
+    - MySQL: `3306`
+    - Redis: `6379`
+    - API 서버: `8080`
+
+### 2. 로컬 실행
+```bash
+./gradlew bootRun
 ```
 
----
-
-⏭️ TODO
-	•	비밀번호 암호화 (BCryptEncoder 등)
-	•	로그인 기능
-	•	JWT 토큰 발급 및 인증
-	•	이메일 인증
-	•	프로필 수정
-	•	테스트 코드 작성 (단위/통합)
+### 3. 환경 변수
+- `application.properties` 또는 `application.yml`에서 DB, Redis 정보 수정
 
 ---
 
-💡 기여 & 라이센스
-
-해당 프로젝트는 개인 또는 팀 개발 학습 목적으로 자유롭게 사용 가능합니다.
-Pull Request 또는 Issue는 언제든 환영합니다!
+## 📄 API 문서
+- Swagger UI: 실행 후 [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
 ---
-TODO: 
-- AuthenticationFilter 추가
-- Token 관련 기능들을 통합
-- Spring Security Config 구성
-- login/Logout/RefreshToken Controller 구성
-- 예외처리 글로벌 핸들러 구성
-- 추가 필요 기능
- 	1.	회원가입 API + 비밀번호 암호화 저장
-	2.	로그인 API → matches()로 비밀번호 검증 추가
-	3.	JwtAuthenticationFilter 등록 → 실질적인 인증 작동
-	4.	SecurityConfig에서 인증 흐름 구성
-	5.	(선택) 예외처리/테스트 작성
+
+## 📌 개선 예정
+- 게시글(Post) 도메인 구현
+- 이메일 인증 로직 강화
+- API 예외 응답 표준화
+- 통합 테스트 케이스 추가
+
+---
