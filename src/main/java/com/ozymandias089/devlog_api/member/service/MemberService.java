@@ -7,7 +7,7 @@ import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
 import com.ozymandias089.devlog_api.global.exception.InvalidCredentialsException;
 import com.ozymandias089.devlog_api.global.exception.JwtValidationException;
-import com.ozymandias089.devlog_api.member.MemberMapper;
+import com.ozymandias089.devlog_api.member.provider.MemberMapper;
 import com.ozymandias089.devlog_api.member.dto.request.LoginRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.request.PasswordResetConfirmRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
@@ -62,15 +62,15 @@ public class MemberService {
      */
     @Transactional
     public SignupResponseDTO signUp(SignupRequestDTO requestDTO) {
-        if (isEmailAlreadyExists(requestDTO.getEmail())) {
+        if (memberProvider.isEmailValidAndUnique(requestDTO.getEmail())) {
             throw new DuplicateEmailExcpetion(requestDTO.getEmail());
         }
 
         // Encode password
-        String encodedPassword = hashPassword(requestDTO.getPassword());
+        String encodedPassword = memberProvider.hashPassword(requestDTO.getPassword());
 
         // Random username creation
-        String username = generateUsername();
+        String username = memberProvider.generateUsername();
 
         Role defaultRole = Role.ROLE_USER;
         log.info("Default role {} given to username {}", defaultRole, username);
@@ -212,7 +212,7 @@ public class MemberService {
             return false;
         }
 
-        if (isEmailAlreadyExists(email)) return false;
+        if (memberProvider.isEmailValidAndUnique(email)) return false;
 
         log.info("Email {} is valid and available", email);
         return true;
@@ -312,7 +312,7 @@ public class MemberService {
         if (!memberProvider.passwordValidator(requestDTO.getNewPassword()).validity()) throw new IllegalArgumentException("Invalid Password format");
 
         // 6. Encrypt and save password
-        String encryptedPassword = hashPassword(requestDTO.getNewPassword());
+        String encryptedPassword = memberProvider.hashPassword(requestDTO.getNewPassword());
         member.updatePassword(encryptedPassword);
         repository.save(member);
 
@@ -322,6 +322,26 @@ public class MemberService {
         log.info("Password reset successful for UUID: {}.", uuid);
     }
 
+    /**
+     * Issues a short-lived, one-time-use password reset token for an authenticated user.
+     * <p>
+     * This method is intended for use when a user is logged in but wishes to change their
+     * password. It performs the following steps:
+     * <ol>
+     *   <li>Retrieves the member record by UUID.</li>
+     *   <li>Validates that the provided current password matches the stored password hash.</li>
+     *   <li>Generates a password reset token with limited validity, suitable for immediate use.</li>
+     *   <li>Wraps the token in a {@link PasswordResetResponseDTO} for return to the caller.</li>
+     * </ol>
+     * The generated reset token can then be used in the standard password reset confirmation
+     * endpoint to set a new password.
+     * </p>
+     *
+     * @param uuid the UUID of the currently authenticated user, as a {@link String}
+     * @param currentPassword the user's current plain-text password for verification
+     * @return a {@link PasswordResetResponseDTO} containing the newly generated reset token
+     * @throws InvalidCredentialsException if no member with the given UUID exists or if the current password does not match
+     */
     public PasswordResetResponseDTO issueResetToken(String uuid, String currentPassword) {
         MemberEntity member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new InvalidCredentialsException("No member found with the provided token"));
         if(!passwordEncoder.matches(currentPassword, member.getPassword())) throw new InvalidCredentialsException("The current Password doesn't match");
@@ -331,47 +351,4 @@ public class MemberService {
                 .resetToken(resetToken)
                 .build();
     }
-
-    /**
-     * Checks if the given email is valid in format and not already registered.
-     *
-     * @param email The email address to check
-     * @return true if the email format is valid and not already in use; false otherwise
-     */
-    private boolean isEmailAlreadyExists(String email) {
-        // DB에서 중복 확인
-        boolean exists = repository.findByEmail(email).isPresent();
-        if (exists) {
-            log.info("Email {} already exists", email);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Generates a unique username in the format "User-xxxxxx", where 'xxxxxx' is a zero-padded
-     * random 6-digit number. The method ensures that the generated username does not already
-     * exist in the repository.
-     *
-     * @return a unique username string
-     */
-    private String generateUsername() {
-        String username;
-        do {
-            int random = (int) (Math.random() * 1_000_000);
-            username = String.format("User-%06d", random);
-        } while (repository.findByUsername(username).isPresent());
-        return username;
-    }
-
-    /**
-     * Hashes the given plain text password using the configured PasswordEncoder.
-     *
-     * @param password the plain text password to be hashed
-     * @return the encoded (hashed) password string
-     */
-    public String hashPassword(String password) {
-        return passwordEncoder.encode(password);
-    }
-
 }

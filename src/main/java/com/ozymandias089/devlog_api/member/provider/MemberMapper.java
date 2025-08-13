@@ -1,4 +1,4 @@
-package com.ozymandias089.devlog_api.member;
+package com.ozymandias089.devlog_api.member.provider;
 
 import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
