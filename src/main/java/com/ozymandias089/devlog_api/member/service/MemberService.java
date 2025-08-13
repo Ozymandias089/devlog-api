@@ -1,5 +1,7 @@
 package com.ozymandias089.devlog_api.member.service;
 
+import com.ozymandias089.devlog_api.member.PasswordValidationResult;
+import com.ozymandias089.devlog_api.member.dto.response.PasswordResetResponseDTO;
 import com.ozymandias089.devlog_api.member.jwt.JwtTokenProvider;
 import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.global.exception.DuplicateEmailExcpetion;
@@ -13,18 +15,16 @@ import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.PasswordValidationResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.entity.Member;
+import com.ozymandias089.devlog_api.member.provider.MemberProvider;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static com.ozymandias089.devlog_api.global.util.RegexPatterns.EMAIL_REGEX;
@@ -39,6 +39,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
+    private final MemberProvider memberProvider;
     @Value("${app.frontend.password-reset-url}")
     private String passwordResetUrl;
 
@@ -103,30 +104,8 @@ public class MemberService {
      * @return a {@link PasswordValidationResponseDTO} containing validation status and error messages
      */
     public PasswordValidationResponseDTO validatePassword(String password) {
-        List<String> errors = new ArrayList<>();
-
-        if (password == null || password.isBlank()) {
-            errors.add("Password cannot be empty.");
-        }
-        if (password.length() < 8) {
-            errors.add("Password must be at least 8 characters long.");
-        }
-        if (!password.matches(".*[A-Z].*")) {
-            errors.add("Password must contain at least one uppercase letter.");
-        }
-        if (!password.matches(".*[a-z].*")) {
-            errors.add("Password must contain at least one lowercase letter.");
-        }
-        if (!password.matches(".*\\d.*")) {
-            errors.add("Password must contain at least one digit.");
-        }
-        if (!password.matches(".*[!@#$%^&*()].*")) {
-            errors.add("Password must contain at least one special character (!@#$%^&*()).");
-        }
-
-        boolean valid = errors.isEmpty();
-
-        return new PasswordValidationResponseDTO(valid, errors);
+        PasswordValidationResult result = memberProvider.passwordValidator(password);
+        return new PasswordValidationResponseDTO(result.validity(), result.errors());
     }
 
     /**
@@ -329,15 +308,28 @@ public class MemberService {
         // 4. Check Members
         Member member = repository.findByUuid(uuid).orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
-        // 5. Encrypt and save password
+        // 5. Check password validity
+        if (!memberProvider.passwordValidator(requestDTO.getNewPassword()).validity()) throw new IllegalArgumentException("Invalid Password format");
+
+        // 6. Encrypt and save password
         String encryptedPassword = hashPassword(requestDTO.getNewPassword());
         member.updatePassword(encryptedPassword);
         repository.save(member);
 
-        // 6. Delete existing refreshToken to invalidate session
+        // 7. Delete existing refreshToken to invalidate session
         jwtTokenProvider.deleteRefreshToken(uuid.toString());
 
         log.info("Password reset successful for UUID: {}.", uuid);
+    }
+
+    public PasswordResetResponseDTO issueResetToken(String uuid, String currentPassword) {
+        Member member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new InvalidCredentialsException("No member found with the provided token"));
+        if(!passwordEncoder.matches(currentPassword, member.getPassword())) throw new InvalidCredentialsException("The current Password doesn't match");
+
+        String resetToken = jwtTokenProvider.generatePasswordResetToken(uuid);
+        return PasswordResetResponseDTO.builder()
+                .resetToken(resetToken)
+                .build();
     }
 
     /**

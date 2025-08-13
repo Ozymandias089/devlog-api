@@ -2,6 +2,7 @@ package com.ozymandias089.devlog_api.member.controller;
 
 import com.ozymandias089.devlog_api.member.dto.request.*;
 import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.response.PasswordResetResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.PasswordValidationResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.service.MemberService;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.antlr.v4.runtime.Token;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -135,7 +137,7 @@ public class MemberController {
      * @param updateRequestDTO  DTO containing the new username to update.
      * @return {@link ResponseEntity} with status 200 OK if the update is successful.
      */
-    @PatchMapping
+    @PatchMapping("/update-username")
     @Operation(summary = "Update Username", description = "닉네임을 업데이트합니다.")
     public ResponseEntity<Void> updateUsername(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid UsernameUpdateRequestDTO updateRequestDTO) {
         memberService.updateUsername(userPrincipal.getName(), updateRequestDTO.getNewUsername());
@@ -156,6 +158,13 @@ public class MemberController {
     public ResponseEntity<Void> requestPasswordReset(@RequestBody @Valid PasswordResetRequestDTO requestDTO) {
         memberService.requestPasswordReset(requestDTO.getEmail());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = "/password-reset/issue", produces = "application/json")
+    @Operation( summary = "Issue Password Reset Token (Authenticated)", description = "로그인 상태에서 현재 비밀번호를 재확인한 뒤, 짧은 만료의 1회성 비밀번호 재설정 토큰을 발급합니다." )
+    public ResponseEntity<PasswordResetResponseDTO> issueResetToken(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid PasswordCheckRequestDTO requestDTO) {
+        PasswordResetResponseDTO passwordResetResponseDTO = memberService.issueResetToken(userPrincipal.getName(), requestDTO.getPassword());
+        return ResponseEntity.ok(passwordResetResponseDTO);
     }
 
     /**
