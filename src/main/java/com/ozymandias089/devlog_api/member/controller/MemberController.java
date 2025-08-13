@@ -61,7 +61,7 @@ public class MemberController {
      */
     @PostMapping(value = "/password/validate", produces = "application/json")
     @Operation(summary = "Validate Password", description = "비밀번호 유효성을 검사합니다.")
-    public ResponseEntity<PasswordValidationResponseDTO> vaidatePassword(@RequestBody @Valid PasswordValidationRequestDTO requestDTO) {
+    public ResponseEntity<PasswordValidationResponseDTO> validatePassword(@RequestBody @Valid PasswordValidationRequestDTO requestDTO) {
         PasswordValidationResponseDTO responseDTO = memberService.validatePassword(requestDTO.getPassword());
         return ResponseEntity.ok(responseDTO);
     }
