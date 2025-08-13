@@ -4,7 +4,7 @@ import com.ozymandias089.devlog_api.global.enums.Role;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.UserResponseDTO;
-import com.ozymandias089.devlog_api.member.entity.Member;
+import com.ozymandias089.devlog_api.member.entity.MemberEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -20,8 +20,8 @@ public class MemberMapper {
      * @param role 회원 역할(Role enum)
      * @return 생성된 Member 엔티티 객체
      */
-    public Member toMemberEntity(SignupRequestDTO dto, String encodedPassword, String alias, Role role) {
-        return Member.builder()
+    public MemberEntity toMemberEntity(SignupRequestDTO dto, String encodedPassword, String alias, Role role) {
+        return MemberEntity.builder()
                 .email(dto.getEmail())
                 .password(encodedPassword)
                 .uuid(UUID.randomUUID())
@@ -37,7 +37,7 @@ public class MemberMapper {
      * @param username 사용자명
      * @return 사용자 응답 DTO
      */
-    public UserResponseDTO toMemberResponseDTO(Member member, String username) {
+    public UserResponseDTO toMemberResponseDTO(MemberEntity member, String username) {
         return UserResponseDTO.builder()
                 .uuid(member.getUuid())
                 .email(member.getEmail())

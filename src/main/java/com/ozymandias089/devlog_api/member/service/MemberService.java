@@ -14,7 +14,7 @@ import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.response.LoginResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.PasswordValidationResponseDTO;
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
-import com.ozymandias089.devlog_api.member.entity.Member;
+import com.ozymandias089.devlog_api.member.entity.MemberEntity;
 import com.ozymandias089.devlog_api.member.provider.MemberProvider;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
@@ -76,8 +76,8 @@ public class MemberService {
         log.info("Default role {} given to username {}", defaultRole, username);
 
         // Create / save Member Entity
-        Member member = mapper.toMemberEntity(requestDTO, encodedPassword, username, defaultRole);
-        Member saved = repository.save(member);
+        MemberEntity member = mapper.toMemberEntity(requestDTO, encodedPassword, username, defaultRole);
+        MemberEntity saved = repository.save(member);
         log.info("User information saved to entity.");
 
         // Create JWT AnR Tokens
@@ -124,7 +124,7 @@ public class MemberService {
      */
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO requestDTO){
-        Member member = repository.findByEmail(requestDTO.getEmail()).orElseThrow(() -> new InvalidCredentialsException("Invalid email or password."));
+        MemberEntity member = repository.findByEmail(requestDTO.getEmail()).orElseThrow(() -> new InvalidCredentialsException("Invalid email or password."));
 
         if (!passwordEncoder.matches(requestDTO.getPassword(), member.getPassword())) {
             log.warn("Invalid password for user: {}", member.getEmail());
@@ -182,7 +182,7 @@ public class MemberService {
      */
     @Transactional
     public void deleteMember(String uuid, String rawPassword){
-        Member member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new RuntimeException("No Such member found with the provided token"));
+        MemberEntity member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new RuntimeException("No Such member found with the provided token"));
         if (!passwordEncoder.matches(rawPassword, member.getPassword())) {
             throw new InvalidCredentialsException("Invalid password");
         }
@@ -236,7 +236,7 @@ public class MemberService {
         if (newUsername == null || newUsername.isBlank() || !USERNAME_REGEX.matcher(newUsername).matches())
             throw new IllegalArgumentException("Invalid Username format");
 
-        Member member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new InvalidCredentialsException("No Account found with the provided UUID"));
+        MemberEntity member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new InvalidCredentialsException("No Account found with the provided UUID"));
 
         if (newUsername.equals(member.getUsername())) return;
 
@@ -254,7 +254,7 @@ public class MemberService {
      * @throws IllegalArgumentException 이메일이 등록되어 있지 않은 경우
      */
     public void requestPasswordReset(String email) {
-        Member member = repository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("No Account found with the provided email"));
+        MemberEntity member = repository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("No Account found with the provided email"));
         String resetToken = jwtTokenProvider.generatePasswordResetToken(member.getUuid().toString());
         String resetURL = passwordResetUrl + "?token=" + resetToken;
         emailService.sendPasswordResetEmail(email, resetURL);
@@ -306,7 +306,7 @@ public class MemberService {
         UUID uuid = UUID.fromString(claims.getSubject());
 
         // 4. Check Members
-        Member member = repository.findByUuid(uuid).orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        MemberEntity member = repository.findByUuid(uuid).orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         // 5. Check password validity
         if (!memberProvider.passwordValidator(requestDTO.getNewPassword()).validity()) throw new IllegalArgumentException("Invalid Password format");
@@ -323,7 +323,7 @@ public class MemberService {
     }
 
     public PasswordResetResponseDTO issueResetToken(String uuid, String currentPassword) {
-        Member member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new InvalidCredentialsException("No member found with the provided token"));
+        MemberEntity member = repository.findByUuid(UUID.fromString(uuid)).orElseThrow(() -> new InvalidCredentialsException("No member found with the provided token"));
         if(!passwordEncoder.matches(currentPassword, member.getPassword())) throw new InvalidCredentialsException("The current Password doesn't match");
 
         String resetToken = jwtTokenProvider.generatePasswordResetToken(uuid);

@@ -1,18 +1,21 @@
 package com.ozymandias089.devlog_api.member.entity;
 
 import com.ozymandias089.devlog_api.global.enums.Role;
+import com.ozymandias089.devlog_api.post.entity.PostEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "member")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member {
+public class MemberEntity {
     @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,8 +42,12 @@ public class Member {
     @Column(nullable = false)
     private Role role;
 
+    @Getter
+    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST, orphanRemoval = false)
+    private List<PostEntity> posts = new ArrayList<>();
+
     @Builder
-    public Member(UUID uuid, String email, String password, String username, Role role) {
+    public MemberEntity(UUID uuid, String email, String password, String username, Role role) {
         this.uuid = uuid;
         this.email = email;
         this.password = password;
