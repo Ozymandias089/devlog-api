@@ -1,0 +1,6 @@
+spring:
+  config:
+    import: []
+logging:
+  level:
+    root: WARN
