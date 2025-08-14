@@ -160,6 +160,16 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 로그인 상태에서 현재 비밀번호를 재확인한 후, 짧은 만료 시간의 1회성 비밀번호 재설정 토큰을 발급합니다.
+     *
+     * <p>이 토큰은 {@code /password-reset/confirm} 엔드포인트에서만 사용 가능하며,
+     * 발급 후 한 번 사용하면 즉시 만료됩니다.</p>
+     *
+     * @param userPrincipal 인증된 사용자 정보(현재 로그인한 사용자)
+     * @param requestDTO    현재 비밀번호를 담은 요청 DTO
+     * @return 발급된 비밀번호 재설정 토큰을 포함한 {@link PasswordResetResponseDTO}
+     */
     @PostMapping(value = "/password-reset/issue", produces = "application/json")
     @Operation( summary = "Issue Password Reset Token (Authenticated)", description = "로그인 상태에서 현재 비밀번호를 재확인한 뒤, 짧은 만료의 1회성 비밀번호 재설정 토큰을 발급합니다." )
     public ResponseEntity<PasswordResetResponseDTO> issueResetToken(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid PasswordCheckRequestDTO requestDTO) {

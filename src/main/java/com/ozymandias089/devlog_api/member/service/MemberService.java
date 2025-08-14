@@ -105,7 +105,7 @@ public class MemberService {
      */
     public PasswordValidationResponseDTO validatePassword(String password) {
         PasswordValidationResult result = memberProvider.passwordValidator(password);
-        return new PasswordValidationResponseDTO(result.validity(), result.errors());
+        return mapper.toPasswordValidationResponseDTO(result);
     }
 
     /**
@@ -135,10 +135,7 @@ public class MemberService {
         String accessToken = jwtTokenProvider.generateAccessToken(member.getUuid().toString(), member.getRole());
         String refreshToken = jwtTokenProvider.generateRefreshToken(member.getUuid().toString());
 
-        return LoginResponseDTO.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
+        return mapper.toLoginResponseDTO(accessToken, refreshToken);
     }
 
     /**
@@ -347,8 +344,6 @@ public class MemberService {
         if(!passwordEncoder.matches(currentPassword, member.getPassword())) throw new InvalidCredentialsException("The current Password doesn't match");
 
         String resetToken = jwtTokenProvider.generatePasswordResetToken(uuid);
-        return PasswordResetResponseDTO.builder()
-                .resetToken(resetToken)
-                .build();
+        return mapper.toPasswordResetResponseDTO(resetToken);
     }
 }

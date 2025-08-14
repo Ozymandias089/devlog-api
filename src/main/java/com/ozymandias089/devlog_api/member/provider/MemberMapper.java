@@ -1,9 +1,9 @@
 package com.ozymandias089.devlog_api.member.provider;
 
 import com.ozymandias089.devlog_api.global.enums.Role;
+import com.ozymandias089.devlog_api.member.PasswordValidationResult;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
-import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
-import com.ozymandias089.devlog_api.member.dto.response.UserResponseDTO;
+import com.ozymandias089.devlog_api.member.dto.response.*;
 import com.ozymandias089.devlog_api.member.entity.MemberEntity;
 import org.springframework.stereotype.Component;
 
@@ -62,6 +62,51 @@ public class MemberMapper {
                 .username(username)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .build();
+    }
+
+    /**
+     * 주어진 비밀번호 유효성 검사 결과를 {@link PasswordValidationResponseDTO}로 변환합니다.
+     *
+     * <p>유효성 여부와 발생한 에러 메시지 목록을 DTO에 담아 반환합니다.</p>
+     *
+     * @param validity 비밀번호 유효성 검사 결과 객체
+     * @return 유효성 여부와 에러 메시지가 포함된 {@link PasswordValidationResponseDTO}
+     */
+    public PasswordValidationResponseDTO toPasswordValidationResponseDTO(PasswordValidationResult validity) {
+        return PasswordValidationResponseDTO.builder()
+                .isValid(validity.validity())
+                .errors(validity.errors())
+                .build();
+    }
+
+    /**
+     * 발급된 액세스 토큰과 리프레시 토큰을 {@link LoginResponseDTO}로 변환합니다.
+     *
+     * <p>로그인 성공 시 클라이언트에 반환할 인증 토큰 정보를 DTO 형태로 구성합니다.</p>
+     *
+     * @param accessToken  JWT 액세스 토큰
+     * @param refreshToken JWT 리프레시 토큰
+     * @return 액세스 토큰과 리프레시 토큰이 포함된 {@link LoginResponseDTO}
+     */
+    public LoginResponseDTO toLoginResponseDTO(String accessToken, String refreshToken) {
+        return LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+    /**
+     * 발급된 비밀번호 재설정 토큰을 {@link PasswordResetResponseDTO}로 변환합니다.
+     *
+     * <p>비밀번호 재설정 절차에서 클라이언트에 전달할 토큰 정보를 DTO 형태로 구성합니다.</p>
+     *
+     * @param resetToken 비밀번호 재설정용 JWT 토큰
+     * @return 재설정 토큰이 포함된 {@link PasswordResetResponseDTO}
+     */
+    public PasswordResetResponseDTO toPasswordResetResponseDTO(String resetToken) {
+        return PasswordResetResponseDTO.builder()
+                .resetToken(resetToken)
                 .build();
     }
 }

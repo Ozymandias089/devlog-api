@@ -94,7 +94,7 @@ public class JwtTokenProvider {
      * @return 생성된 JWT 비밀번호 재설정 토큰
      */
     public String generatePasswordResetToken(String uuid) {
-        long passwordResetTokenExpirationMinutes = 30L;
+        long passwordResetTokenExpirationMinutes = 5L;
         Instant now = Instant.now();
         Instant expiryDate = now.plusSeconds(TimeUnit.MINUTES.toSeconds(passwordResetTokenExpirationMinutes));
 
