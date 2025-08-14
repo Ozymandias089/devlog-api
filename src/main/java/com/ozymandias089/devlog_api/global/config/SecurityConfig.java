@@ -128,11 +128,20 @@ public class SecurityConfig {
     @Profile("prod")
     public SecurityFilterChain httpsEnforcedChain(HttpSecurity http) throws Exception {
         http
-                .requiresChannel(ch -> ch.anyRequest().requiresSecure())
-                .headers(h -> h.httpStrictTransportSecurity(hsts -> hsts
-                        .includeSubDomains(true)
-                        .preload(true)
-                        .maxAgeInSeconds(31536000)));
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().authenticated()
+                )
+                .requiresChannel(channel -> channel
+                        .anyRequest().requiresSecure()
+                )
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .preload(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                );
         return http.build();
     }
+
 }
