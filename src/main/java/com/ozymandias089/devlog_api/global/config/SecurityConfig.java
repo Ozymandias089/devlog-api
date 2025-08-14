@@ -4,6 +4,7 @@ import com.ozymandias089.devlog_api.member.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import java.util.List;
 
@@ -50,24 +53,49 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                // CORS
                 .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                    corsConfig.setAllowedOrigins(List.of("*")); // 또는 프론트엔드 URL로 제한
-                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfig.setAllowedHeaders(List.of("*"));
-                    corsConfig.setAllowCredentials(true);
-                    return corsConfig;
+                    CorsConfiguration c = new CorsConfiguration();
+                    // ★ 자격증명을 쓸 경우 프런트 도메인을 명시하세요.
+                    c.setAllowedOrigins(List.of(
+                            "https://your-frontend.example.com",
+                            "https://staging-frontend.example.com"
+                            // 로컬 개발 시: "http://localhost:5173" 등 프로필별 yml 권장
+                    ));
+                    c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                    c.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+                    c.setExposedHeaders(List.of("Authorization"));
+                    c.setAllowCredentials(true); // 자격증명 사용 시 * 금지
+                    c.setMaxAge(3600L);
+                    return c;
                 }))
+                // CSRF 비활성화(토큰 기반)
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                // 세션 Stateless
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 경로 권한
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/public/**", "/api/members/signup")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated()
-                ).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).build();
+                        .requestMatchers(
+                                "/auth/**",
+                                "/public/**",
+                                "/api/members/signup",
+                                // Swagger/OpenAPI 허용 (필요 시)
+                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                // JWT 필터
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    /**
+     * (프록시 종단 시 권장) X-Forwarded-* / Forwarded 헤더 신뢰를 위한 필터.
+     * Nginx/ALB 뒤에서 HTTPS 강제 로직이 올바르게 동작하도록 도와줍니다.
+     */
+    @Bean
+    public ForwardedHeaderFilter forwardedHeaderFilter() {
+        return new ForwardedHeaderFilter();
     }
 
     /**
@@ -90,5 +118,21 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * 운영 환경에서만 HTTPS를 강제하고 HSTS를 적용합니다.
+     * 프록시 뒤에 있을 경우 X-Forwarded-Proto=https 헤더가 필요합니다.
+     */
+    @Bean
+    @Profile("prod")
+    public SecurityFilterChain httpsEnforcedChain(HttpSecurity http) throws Exception {
+        http
+                .requiresChannel(ch -> ch.anyRequest().requiresSecure())
+                .headers(h -> h.httpStrictTransportSecurity(hsts -> hsts
+                        .includeSubDomains(true)
+                        .preload(true)
+                        .maxAgeInSeconds(31536000)));
+        return http.build();
     }
 }
