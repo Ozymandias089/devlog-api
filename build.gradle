@@ -42,7 +42,7 @@ dependencies {
     runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     // --- API 문서 (Swagger UI) ---
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:latest'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
     // --- Dev / Lombok ---
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

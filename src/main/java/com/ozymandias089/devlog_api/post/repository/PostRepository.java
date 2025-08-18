@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -83,4 +84,8 @@ public interface PostRepository extends JpaRepository<PostEntity, Long> {
      * @param authorUuid 작성자 UUID
      */
     boolean existsByIdAndAuthorUuid(Long id, UUID authorUuid);
+
+    boolean existsByAuthorAndSlug(MemberEntity author, String slug);
+    Optional<PostEntity> findBySlug(String slug);                      // 전역 유일일 경우
+    Optional<PostEntity> findByAuthorUuidAndSlug(UUID author, String slug); // 작성자별 유일일 경우
 }

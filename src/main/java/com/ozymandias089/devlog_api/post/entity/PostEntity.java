@@ -22,7 +22,12 @@ import java.time.Instant;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter
     private Long id;
+
+    @Getter
+    @Column(nullable = false, length = 160)
+    private String slug;
 
     @Getter
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -53,7 +58,8 @@ public class PostEntity {
     private Instant updatedAt;
 
     @Builder
-    public PostEntity(MemberEntity author, String title, String content, Long viewCount) {
+    public PostEntity(String slug, MemberEntity author, String title, String content, Long viewCount) {
+        this.slug = slug;
         this.author = author;
         this.title = title;
         this.viewCount = viewCount;
