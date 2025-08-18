@@ -35,6 +35,12 @@ public class PostController {
     }
 
     // Read
+    // Get detailed info of one post. slug, title, content, createdAt, member username, uuid?, viewCount. Header is slug
+    // Get lists of posts. 20 max, {title, author.username, viewcount, createdAt}. increment by createdAt reversed
+
     // Update
+    // Update. parameter is Slug and token. check token name with post author's uuid. Maybe consider using a session.
+
     // Delete
+    // Delete post. validate token uuid with author's uuid.
 }
