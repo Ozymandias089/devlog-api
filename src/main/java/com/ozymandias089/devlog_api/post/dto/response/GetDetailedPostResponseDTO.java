@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 
-public record getDetailedPostResponseDTO(
+public record GetDetailedPostResponseDTO(
         @NotBlank @Size(max = 150) String title,
         @NotBlank String uuid,
         @NotBlank  String username,

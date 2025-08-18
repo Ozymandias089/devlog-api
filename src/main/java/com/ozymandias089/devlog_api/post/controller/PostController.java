@@ -1,6 +1,7 @@
 package com.ozymandias089.devlog_api.post.controller;
 
 import com.ozymandias089.devlog_api.post.dto.request.CreatePostRequestDTO;
+import com.ozymandias089.devlog_api.post.dto.response.GetPostListResponseDTO;
 import com.ozymandias089.devlog_api.post.dto.response.PostCreateResponseDTO;
 import com.ozymandias089.devlog_api.post.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,10 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.nio.file.attribute.UserPrincipal;
@@ -36,10 +34,18 @@ public class PostController {
 
     // Read
     // Get detailed info of one post. slug, title, content, createdAt, member username, uuid?, viewCount. Header is slug
-    // Get lists of posts. 20 max, {title, author.username, viewcount, createdAt}. increment by createdAt reversed
+    // Get lists of posts. 20 max, {title, author.username, author.uuid, viewcount, createdAt}. increment by createdAt reversed
+    @GetMapping(value = "/post-list", produces = "application/json")
+    @Operation(summary = "Get Post list", description = "Get List of posts. max 20")
+    public ResponseEntity<GetPostListResponseDTO> getPostList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(postService.getPostList(page, size));
+    }
 
     // Update
-    // Update. parameter is Slug and token. check token name with post author's uuid. Maybe consider using a session.
+    // Updater parameter is Slug and token. check token name with post author's uuid. Maybe consider using a session.
 
     // Delete
     // Delete post. validate token uuid with author's uuid.

@@ -4,6 +4,7 @@ import com.ozymandias089.devlog_api.member.entity.MemberEntity;
 import com.ozymandias089.devlog_api.post.entity.PostEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -86,6 +87,11 @@ public interface PostRepository extends JpaRepository<PostEntity, Long> {
     boolean existsByIdAndAuthorUuid(Long id, UUID authorUuid);
 
     boolean existsByAuthorAndSlug(MemberEntity author, String slug);
+
     Optional<PostEntity> findBySlug(String slug);                      // 전역 유일일 경우
+
     Optional<PostEntity> findByAuthorUuidAndSlug(UUID author, String slug); // 작성자별 유일일 경우
+
+    @EntityGraph(attributePaths = "author")
+    Page<PostEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }
