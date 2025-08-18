@@ -1,15 +1,13 @@
 package com.ozymandias089.devlog_api.post.dto.response;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
 import java.time.Instant;
+import java.util.UUID;
 
 public record GetDetailedPostResponseDTO(
-        @NotBlank @Size(max = 150) String title,
-        @NotBlank String uuid,
-        @NotBlank  String username,
-        @NotBlank Long viewCount,
-        @NotBlank Instant createdAt,
-        @NotBlank String content
+        String title,
+        UUID authorUuid,
+        String authorUsername,
+        long viewCount,
+        Instant createdAt,
+        String content
 ) {}

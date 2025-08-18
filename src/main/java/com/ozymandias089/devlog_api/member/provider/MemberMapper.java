@@ -5,12 +5,11 @@ import com.ozymandias089.devlog_api.member.PasswordValidationResult;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.response.*;
 import com.ozymandias089.devlog_api.member.entity.MemberEntity;
-import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
-@Component
 public class MemberMapper {
+    private MemberMapper() {}
     /**
      * SignupRequestDTO와 추가 정보를 받아 Member 엔티티로 변환합니다.
      *
