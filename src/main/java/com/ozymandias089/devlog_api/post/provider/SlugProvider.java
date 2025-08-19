@@ -17,7 +17,7 @@ public class SlugProvider {
      */
     public String generateUniqueSlug(MemberEntity author, String title) {
         // SlugUtil이 있다면 그걸 사용, 없다면 간단한 slugify 로직 직접 구현
-        String base = SlugUtil.slugify(title); // 예: 소문자, 비영문 -> -, 연속 - 압축, 앞뒤 - 트림
+        String base = SlugUtil.toSlug(title); // 예: 소문자, 비영문 -> -, 연속 - 압축, 앞뒤 - 트림
         if (base == null || base.isBlank()) base = "post";
 
         String candidate = base;
