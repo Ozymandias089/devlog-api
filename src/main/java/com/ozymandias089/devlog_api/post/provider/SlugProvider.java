@@ -11,24 +11,21 @@ import org.springframework.stereotype.Component;
 public class SlugProvider {
     private final PostRepository postRepository;
 
+    /**
+     * 제목을 기반으로 전역 유일 슬러그를 생성합니다.
+     * 현재 정책: 전역 유일 (author 무관)
+     */
     public String generateUniqueSlug(MemberEntity author, String title) {
-        String base = SlugUtil.toSlug(title);
-        String slug = base;
+        // SlugUtil이 있다면 그걸 사용, 없다면 간단한 slugify 로직 직접 구현
+        String base = SlugUtil.slugify(title); // 예: 소문자, 비영문 -> -, 연속 - 압축, 앞뒤 - 트림
+        if (base == null || base.isBlank()) base = "post";
 
-        // 1~5까지 숫자 suffix 시도
-        for (int i = 2; i <= 5; i++) {
-            if (!postRepository.existsByAuthorAndSlug(author, slug)) return slug;
-            slug = base + "-" + i;
-            if (slug.length() > 160) {
-                slug = (base.substring(0, Math.max(1, 160 - ("-" + i).length()))) + "-" + i;
-            }
+        String candidate = base;
+        int i = 0;
+        while (postRepository.existsBySlug(candidate)) {
+            i++;
+            candidate = base + "-" + i;
         }
-        // 여전히 충돌 → 짧은 토큰
-        String tok = SlugUtil.shortToken();
-        slug = base + "-" + tok;
-        if (slug.length() > 160) {
-            slug = base.substring(0, Math.max(1, 160 - ("-" + tok).length())) + "-" + tok;
-        }
-        return slug;
+        return candidate;
     }
 }

@@ -28,4 +28,10 @@ public final class SlugUtil {
         String s = Long.toString(v, 36);
         return s.substring(Math.max(0, s.length()-6));
     }
+
+    public static String slugify(String s) {
+        String t = s.toLowerCase().replaceAll("[^a-z0-9]+", "-");
+        t = t.replaceAll("^-+|-+$", "");
+        return t.isBlank() ? "post" : t;
+    }
 }
