@@ -212,4 +212,38 @@ public class PostService {
         // 4. 정본 슬러그 반환 (불변 정책)
         return targetPost.getSlug();
     }
+
+    /**
+     * 슬러그로 식별되는 게시글을 삭제합니다.
+     *
+     * <p><strong>동작 순서</strong></p>
+     * <ol>
+     *   <li>슬러그로 대상 {@link PostEntity}를 조회합니다. 없으면
+     *       {@link com.ozymandias089.devlog_api.global.exception.PostNotFoundException} 발생.</li>
+     *   <li>요청자 UUID와 게시글 작성자 UUID가 일치하는지 검증합니다. 불일치 시
+     *       {@link com.ozymandias089.devlog_api.global.exception.ForbiddenActionException} 발생.</li>
+     *   <li>검증을 통과하면 해당 게시글을 삭제합니다.</li>
+     * </ol>
+     *
+     * <p>트랜잭션 안에서 실행되며, 예외 발생 시 롤백됩니다.</p>
+     *
+     * @param uuid 요청자(UUID 문자열, 보통 JWT subject)
+     * @param slug 삭제 대상 게시글의 전역 유일 슬러그
+     *
+     * @throws com.ozymandias089.devlog_api.global.exception.PostNotFoundException
+     *         주어진 슬러그의 게시글이 존재하지 않는 경우
+     * @throws com.ozymandias089.devlog_api.global.exception.ForbiddenActionException
+     *         요청자가 게시글 작성자가 아니어서 삭제 권한이 없는 경우
+     *
+     * @implNote 댓글/좋아요 등 연관 데이터가 있다면 FK 제약, JPA cascade(orphanRemoval), 소프트 딜리트 전략을
+     *           사전에 정렬해야 합니다. FK 위반을 즉시 드러내고 싶으면 필요에 따라 {@code entityManager.flush()}를 호출하세요.
+     * @since 1.0
+     */
+    @Transactional
+    public void deletePost(String uuid, String slug) {
+        PostEntity post = postRepository.findBySlugWithAuthor(slug).orElseThrow(() -> new PostNotFoundException(slug));
+        if (!post.getAuthor().getUuid().equals(UUID.fromString(uuid))) throw new ForbiddenActionException("Action unauthorized.");
+
+        postRepository.delete(post);
+    }
 }

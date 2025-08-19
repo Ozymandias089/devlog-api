@@ -149,7 +149,37 @@ public class PostController {
         return ResponseEntity.status(303).location(location).build();
     }
 
-
-    // Delete:
-    // - 슬러그와 토큰을 받아 작성자 권한을 검증 후 게시글 삭제 예정
+    /**
+     * 슬러그로 식별되는 게시글을 삭제한 뒤, 목록 화면으로 리다이렉트(303 See Other)합니다.
+     *
+     * <p><strong>HTTP 시맨틱</strong>:
+     * 성공 시 응답 바디 없이 <strong>303 See Other</strong>를 반환하며,
+     * <code>Location</code> 헤더를 <code>/api/posts/post-list?page=0&size=20</code>로 설정합니다.
+     * 클라이언트는 해당 URI로 <code>GET</code>을 수행해 최신 목록을 조회해야 합니다.</p>
+     *
+     * <p><strong>권한</strong>:
+     * 인증 주체의 UUID(보통 JWT subject)와, 슬러그로 조회한 게시글의 작성자 UUID가 일치할 때만 삭제가 허용됩니다.
+     * 권한 검증 및 실제 삭제는 서비스 레이어에서 수행됩니다.</p>
+     *
+     * @param userPrincipal 인증 주체(사용자 UUID 문자열은 {@link java.nio.file.attribute.UserPrincipal#getName()}에서 획득)
+     * @param slug          삭제할 게시글의 전역 유일 슬러그
+     * @return <strong>303 See Other</strong> (응답 바디 없음) + <code>Location</code> 헤더에 목록 URI
+     *
+     * @throws com.ozymandias089.devlog_api.global.exception.PostNotFoundException
+     *         주어진 슬러그에 해당하는 게시글이 없을 때
+     * @throws com.ozymandias089.devlog_api.global.exception.ForbiddenActionException
+     *         인증 사용자가 작성자와 일치하지 않아 삭제 권한이 없을 때
+     *
+     * @implNote 목록 URI가 바뀔 수 있다면 상수를 사용하거나 URI 빌더 사용을 고려하세요.
+     * @see com.ozymandias089.devlog_api.post.service.PostService#deletePost(String, String)
+     */
+    @DeleteMapping("/{slug}")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Deletes post", description = "토큰의 uuid와 슬러그로 검색한 게시글 작성자의 UUID를 비교해 일치한다면 게시글을 삭제합니다.")
+    public ResponseEntity<Void> deletePost(@AuthenticationPrincipal UserPrincipal userPrincipal, @PathVariable String slug) {
+        postService.deletePost(userPrincipal.getName(), slug);
+        return ResponseEntity.status(303)
+                .header("Location", "/api/posts/post-list?page=0&size=20")
+                .build();
+    }
 }
