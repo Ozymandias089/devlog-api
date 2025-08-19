@@ -1,11 +1,13 @@
 package com.ozymandias089.devlog_api.post.service;
 
+import com.ozymandias089.devlog_api.global.exception.ForbiddenActionException;
 import com.ozymandias089.devlog_api.global.exception.InvalidCredentialsException;
 import com.ozymandias089.devlog_api.global.exception.PostNotFoundException;
 import com.ozymandias089.devlog_api.member.entity.MemberEntity;
 import com.ozymandias089.devlog_api.member.repository.MemberRepository;
 import com.ozymandias089.devlog_api.post.dto.PostSummaryDTO;
 import com.ozymandias089.devlog_api.post.dto.request.CreatePostRequestDTO;
+import com.ozymandias089.devlog_api.post.dto.request.UpdatePostRequestDTO;
 import com.ozymandias089.devlog_api.post.dto.response.GetDetailedPostResponseDTO;
 import com.ozymandias089.devlog_api.post.dto.response.GetPostListResponseDTO;
 import com.ozymandias089.devlog_api.post.entity.PostEntity;
@@ -157,5 +159,57 @@ public class PostService {
                 post.getCreatedAt(),
                 post.getContent()
         );
+    }
+
+    /**
+     * 슬러그로 식별되는 게시글을 부분 수정(PATCH)합니다.
+     *
+     * <p><strong>동작 순서</strong></p>
+     * <ol>
+     *   <li>슬러그로 대상 {@link PostEntity}를 조회합니다. 없으면 {@link com.ozymandias089.devlog_api.global.exception.PostNotFoundException}.</li>
+     *   <li>요청자의 UUID와 게시글 작성자 UUID를 비교해 권한을 검증합니다. 불일치 시 {@link com.ozymandias089.devlog_api.global.exception.ForbiddenActionException}.</li>
+     *   <li>{@link UpdatePostRequestDTO}의 <code>title</code>/<code>content</code>가
+     *       <em>null/blank가 아니면서</em> 기존 값과 다를 때만 반영합니다.</li>
+     * </ol>
+     *
+     * <p>
+     * 이 메서드는 트랜잭션 안에서 JPA 더티 체킹에 의해 변경 사항이 커밋 시점에 자동 반영됩니다.
+     * 슬러그는 정책상 불변이므로 저장된 <em>정본(canonical)</em> 슬러그를 그대로 반환합니다.
+     * </p>
+     *
+     * @param uuid     인증 사용자의 UUID 문자열(예: JWT subject)
+     * @param slug     수정 대상 게시글의 슬러그
+     * @param requestDTO 수정할 제목/내용을 담은 DTO(필드가 null/blank면 해당 항목은 미수정)
+     * @return 저장된 게시글의 정본(canonical) 슬러그
+     *
+     * @throws com.ozymandias089.devlog_api.global.exception.PostNotFoundException
+     *         슬러그에 해당하는 게시글이 존재하지 않는 경우
+     * @throws com.ozymandias089.devlog_api.global.exception.ForbiddenActionException
+     *         요청자(UUID)가 게시글 작성자가 아닌 경우
+     *
+     * @implNote 동시 수정 충돌 방지를 위해 필요 시 {@link jakarta.persistence.Version @Version} 기반 낙관적 락 도입을 고려하세요.
+     *           (예: 요청/응답에 version 포함 후 불일치 시 409/412 처리)
+     * @since 1.0
+     */
+    @Transactional
+    public String updatePost(String uuid, String slug, UpdatePostRequestDTO requestDTO) {
+        // 1. 슬러그로 포스트를 검색해온다.
+        PostEntity targetPost = postRepository.findBySlugWithAuthor(slug).orElseThrow(() -> new PostNotFoundException(slug));
+        // 2. 토큰 파라미터로 받은 uuid와 슬러그로 검색해온 포스트의 uuid를 비교해 유효성을 검증한다.
+        if (!targetPost.getAuthor().getUuid().equals(UUID.fromString(uuid))) throw new ForbiddenActionException("Unauthorized Action.");
+
+        // 3. dto의 제목, 내용을 반영한다.
+        if (requestDTO.title() != null &&
+                !requestDTO.title().isBlank() &&
+                !requestDTO.title().equals(targetPost.getTitle())
+        ) targetPost.updateTitle(requestDTO.title().trim());
+
+        if (requestDTO.content() != null &&
+                !requestDTO.content().isBlank() &&
+                !requestDTO.content().equals(targetPost.getContent()))
+            targetPost.updateContent(requestDTO.content());
+
+        // 4. 정본 슬러그 반환 (불변 정책)
+        return targetPost.getSlug();
     }
 }
