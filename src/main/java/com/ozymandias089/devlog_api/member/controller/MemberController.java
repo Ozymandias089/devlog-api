@@ -7,6 +7,7 @@ import com.ozymandias089.devlog_api.member.dto.response.PasswordValidationRespon
 import com.ozymandias089.devlog_api.member.dto.response.SignupResponseDTO;
 import com.ozymandias089.devlog_api.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -106,6 +107,7 @@ public class MemberController {
      * @param authorizationHeader the "Authorization" HTTP header containing the bearer access token
      */
     @PostMapping("/logout")
+    @SecurityRequirement(name="bearerAuth")
     @Operation(summary = "Logout", description = "로그아웃하고 Refresh Token을 무효화합니다.")
     public ResponseEntity<Void> logout(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestHeader("Authorization") String authorizationHeader) {
         memberService.logout(userPrincipal.getName(), authorizationHeader);
@@ -119,6 +121,7 @@ public class MemberController {
      * @param requestDTO    the DTO containing the password for confirmation
      */
     @DeleteMapping("/unregister")
+    @SecurityRequirement(name="bearerAuth")
     @Operation(summary = "Delete Account", description = "회원 탈퇴를 진행합니다.")
     public ResponseEntity<Void> unregister(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid PasswordCheckRequestDTO requestDTO) {
         memberService.deleteMember(userPrincipal.getName(), requestDTO.getPassword());
@@ -137,6 +140,7 @@ public class MemberController {
      * @return {@link ResponseEntity} with status 200 OK if the update is successful.
      */
     @PatchMapping("/update-username")
+    @SecurityRequirement(name="bearerAuth")
     @Operation(summary = "Update Username", description = "닉네임을 업데이트합니다.")
     public ResponseEntity<Void> updateUsername(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid UsernameUpdateRequestDTO updateRequestDTO) {
         memberService.updateUsername(userPrincipal.getName(), updateRequestDTO.getNewUsername());
@@ -170,6 +174,7 @@ public class MemberController {
      * @return 발급된 비밀번호 재설정 토큰을 포함한 {@link PasswordResetResponseDTO}
      */
     @PostMapping(value = "/password-reset/issue", produces = "application/json")
+    @SecurityRequirement(name="bearerAuth")
     @Operation( summary = "Issue Password Reset Token (Authenticated)", description = "로그인 상태에서 현재 비밀번호를 재확인한 뒤, 짧은 만료의 1회성 비밀번호 재설정 토큰을 발급합니다." )
     public ResponseEntity<PasswordResetResponseDTO> issueResetToken(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody @Valid PasswordCheckRequestDTO requestDTO) {
         PasswordResetResponseDTO passwordResetResponseDTO = memberService.issueResetToken(userPrincipal.getName(), requestDTO.getPassword());

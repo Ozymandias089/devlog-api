@@ -35,7 +35,6 @@ import static com.ozymandias089.devlog_api.global.util.RegexPatterns.USERNAME_RE
 @RequiredArgsConstructor
 public class MemberService {
     private final MemberRepository repository;
-    private final MemberMapper mapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
@@ -62,7 +61,7 @@ public class MemberService {
      */
     @Transactional
     public SignupResponseDTO signUp(SignupRequestDTO requestDTO) {
-        if (memberProvider.isEmailValidAndUnique(requestDTO.getEmail())) {
+        if (!memberProvider.isEmailValidAndUnique(requestDTO.getEmail())) {
             throw new DuplicateEmailExcpetion(requestDTO.getEmail());
         }
 
@@ -76,7 +75,7 @@ public class MemberService {
         log.info("Default role {} given to username {}", defaultRole, username);
 
         // Create / save Member Entity
-        MemberEntity member = mapper.toMemberEntity(requestDTO, encodedPassword, username, defaultRole);
+        MemberEntity member = MemberMapper.toMemberEntity(requestDTO, encodedPassword, username, defaultRole);
         MemberEntity saved = repository.save(member);
         log.info("User information saved to entity.");
 
@@ -84,7 +83,7 @@ public class MemberService {
         String accessToken = jwtTokenProvider.generateAccessToken(saved.getUuid().toString(), defaultRole);
         String refreshToken = jwtTokenProvider.generateRefreshToken(saved.getUuid().toString());
 
-        return mapper.toSignupResponseDTO(saved.getUuid(), saved.getEmail(), saved.getUsername(), accessToken, refreshToken);
+        return MemberMapper.toSignupResponseDTO(saved.getUuid(), saved.getEmail(), saved.getUsername(), accessToken, refreshToken);
     }
 
     /**
@@ -105,7 +104,7 @@ public class MemberService {
      */
     public PasswordValidationResponseDTO validatePassword(String password) {
         PasswordValidationResult result = memberProvider.passwordValidator(password);
-        return mapper.toPasswordValidationResponseDTO(result);
+        return MemberMapper.toPasswordValidationResponseDTO(result);
     }
 
     /**
@@ -135,7 +134,7 @@ public class MemberService {
         String accessToken = jwtTokenProvider.generateAccessToken(member.getUuid().toString(), member.getRole());
         String refreshToken = jwtTokenProvider.generateRefreshToken(member.getUuid().toString());
 
-        return mapper.toLoginResponseDTO(accessToken, refreshToken);
+        return MemberMapper.toLoginResponseDTO(accessToken, refreshToken);
     }
 
     /**
@@ -344,6 +343,6 @@ public class MemberService {
         if(!passwordEncoder.matches(currentPassword, member.getPassword())) throw new InvalidCredentialsException("The current Password doesn't match");
 
         String resetToken = jwtTokenProvider.generatePasswordResetToken(uuid);
-        return mapper.toPasswordResetResponseDTO(resetToken);
+        return MemberMapper.toPasswordResetResponseDTO(resetToken);
     }
 }

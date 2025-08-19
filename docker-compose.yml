@@ -43,6 +43,13 @@ services:
       SPRING_DATASOURCE_PASSWORD: devpass
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
+      # 🔽 메일 설정 (Boot가 JavaMailSender 자동 등록)
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_USERNAME: ${GMAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${GMAIL_APP_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
     networks:
       - devlog-network
 

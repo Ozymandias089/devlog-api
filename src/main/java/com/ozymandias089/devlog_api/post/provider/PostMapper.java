@@ -4,6 +4,7 @@ import com.ozymandias089.devlog_api.member.entity.MemberEntity;
 import com.ozymandias089.devlog_api.post.dto.PostSummaryDTO;
 import com.ozymandias089.devlog_api.post.entity.PostEntity;
 import com.ozymandias089.devlog_api.post.repository.PostRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -18,8 +19,8 @@ import java.util.List;
  *
  * @since 1.0
  */
-public class PostMapper {
-    private PostMapper() {}
+@RequiredArgsConstructor
+public final class PostMapper {
 
     /**
      * 주어진 작성자/제목/본문/슬러그로 {@link PostEntity}를 생성합니다.

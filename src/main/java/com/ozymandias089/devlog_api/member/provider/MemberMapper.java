@@ -5,11 +5,12 @@ import com.ozymandias089.devlog_api.member.PasswordValidationResult;
 import com.ozymandias089.devlog_api.member.dto.request.SignupRequestDTO;
 import com.ozymandias089.devlog_api.member.dto.response.*;
 import com.ozymandias089.devlog_api.member.entity.MemberEntity;
+import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
 
-public class MemberMapper {
-    private MemberMapper() {}
+@RequiredArgsConstructor
+public final class MemberMapper {
     /**
      * SignupRequestDTO와 추가 정보를 받아 Member 엔티티로 변환합니다.
      *
@@ -19,7 +20,7 @@ public class MemberMapper {
      * @param role 회원 역할(Role enum)
      * @return 생성된 Member 엔티티 객체
      */
-    public MemberEntity toMemberEntity(SignupRequestDTO dto, String encodedPassword, String alias, Role role) {
+    public static MemberEntity toMemberEntity(SignupRequestDTO dto, String encodedPassword, String alias, Role role) {
         return MemberEntity.builder()
                 .email(dto.getEmail())
                 .password(encodedPassword)
@@ -36,7 +37,7 @@ public class MemberMapper {
      * @param username 사용자명
      * @return 사용자 응답 DTO
      */
-    public UserResponseDTO toMemberResponseDTO(MemberEntity member, String username) {
+    public static UserResponseDTO toMemberResponseDTO(MemberEntity member, String username) {
         return UserResponseDTO.builder()
                 .uuid(member.getUuid())
                 .email(member.getEmail())
@@ -54,7 +55,7 @@ public class MemberMapper {
      * @param refreshToken 발급된 JWT Refresh Token
      * @return 회원가입 응답 DTO
      */
-    public SignupResponseDTO toSignupResponseDTO(UUID uuid, String email, String username, String accessToken, String refreshToken) {
+    public static SignupResponseDTO toSignupResponseDTO(UUID uuid, String email, String username, String accessToken, String refreshToken) {
         return SignupResponseDTO.builder()
                 .uuid(uuid)
                 .email(email)
@@ -72,7 +73,7 @@ public class MemberMapper {
      * @param validity 비밀번호 유효성 검사 결과 객체
      * @return 유효성 여부와 에러 메시지가 포함된 {@link PasswordValidationResponseDTO}
      */
-    public PasswordValidationResponseDTO toPasswordValidationResponseDTO(PasswordValidationResult validity) {
+    public static PasswordValidationResponseDTO toPasswordValidationResponseDTO(PasswordValidationResult validity) {
         return PasswordValidationResponseDTO.builder()
                 .isValid(validity.validity())
                 .errors(validity.errors())
@@ -88,7 +89,7 @@ public class MemberMapper {
      * @param refreshToken JWT 리프레시 토큰
      * @return 액세스 토큰과 리프레시 토큰이 포함된 {@link LoginResponseDTO}
      */
-    public LoginResponseDTO toLoginResponseDTO(String accessToken, String refreshToken) {
+    public static LoginResponseDTO toLoginResponseDTO(String accessToken, String refreshToken) {
         return LoginResponseDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -103,7 +104,7 @@ public class MemberMapper {
      * @param resetToken 비밀번호 재설정용 JWT 토큰
      * @return 재설정 토큰이 포함된 {@link PasswordResetResponseDTO}
      */
-    public PasswordResetResponseDTO toPasswordResetResponseDTO(String resetToken) {
+    public static PasswordResetResponseDTO toPasswordResetResponseDTO(String resetToken) {
         return PasswordResetResponseDTO.builder()
                 .resetToken(resetToken)
                 .build();

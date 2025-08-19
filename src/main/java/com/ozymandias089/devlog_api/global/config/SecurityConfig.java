@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -53,39 +54,47 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // CORS
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Swagger / docs
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+                        // Members: 공개 엔드포인트들
+                        .requestMatchers(HttpMethod.POST, "/api/members/signup", "/api/members/login").permitAll()
+                        .requestMatchers(HttpMethod.GET,  "/api/members/check-email", "/api/members/password/validate").permitAll()
+                        .requestMatchers("/api/members/password-reset/**").permitAll()
+
+                        // Posts: 조회는 공개, 나머지는 인증
+                        .requestMatchers(HttpMethod.GET, "/api/posts/post-list", "/api/posts/*").permitAll()
+                        // (원하면 POST /api/posts/create만 인증, PATCH/DELETE 인증은 기본 anyRequest로 커버)
+
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) -> {
+                            res.setStatus(401);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\":\"unauthorized\"}");
+                        })
+                        .accessDeniedHandler((req, res, e) -> {
+                            res.setStatus(403);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\":\"forbidden\"}");
+                        })
+                )
+                // CORS: Swagger를 같은 8080에서 쓰면 불필요. 다른 오리진에서 호출 시에만 설정.
                 .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration c = new CorsConfiguration();
-                    // ★ 자격증명을 쓸 경우 프런트 도메인을 명시하세요.
-                    c.setAllowedOrigins(List.of(
-                            "https://your-frontend.example.com",
-                            "https://staging-frontend.example.com"
-                            // 로컬 개발 시: "http://localhost:5173" 등 프로필별 yml 권장
-                    ));
-                    c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-                    c.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-                    c.setExposedHeaders(List.of("Authorization"));
-                    c.setAllowCredentials(true); // 자격증명 사용 시 * 금지
+                    var c = new CorsConfiguration();
+                    c.setAllowedOriginPatterns(List.of("*")); // 운영은 구체 오리진 지정
+                    c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+                    c.setAllowedHeaders(List.of("*"));
+                    c.setExposedHeaders(List.of("Location","Authorization"));
+                    c.setAllowCredentials(true);
                     c.setMaxAge(3600L);
                     return c;
                 }))
-                // CSRF 비활성화(토큰 기반)
-                .csrf(AbstractHttpConfigurer::disable)
-                // 세션 Stateless
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 경로 권한
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/auth/**",
-                                "/public/**",
-                                "/api/members/signup",
-                                // Swagger/OpenAPI 허용 (필요 시)
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                // JWT 필터
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

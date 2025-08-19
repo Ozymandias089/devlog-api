@@ -75,13 +75,17 @@ public class MemberProvider {
     /**
      * Checks if the given email is valid in format and not already registered.
      *
-     * @param email The email address to check
+     * @param rawEmail The email address to check
      * @return true if the email format is valid and not already in use; false otherwise
      */
-    public boolean isEmailValidAndUnique(String email) {
-        if (email == null || email.isBlank()) return false;
+    public boolean isEmailValidAndUnique(String rawEmail) {
+        if (rawEmail == null) return false;
+        String email = rawEmail.trim().toLowerCase();
+        if (email.isEmpty()) return false;
         if (!RegexPatterns.EMAIL_REGEX.matcher(email).matches()) return false;
-        return !isEmailValidAndUnique(email);
+
+        // DB에 없으면 unique → true
+        return !memberRepository.existsByEmail(email);
     }
 
     /**
