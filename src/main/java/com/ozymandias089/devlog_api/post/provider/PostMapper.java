@@ -2,6 +2,9 @@ package com.ozymandias089.devlog_api.post.provider;
 
 import com.ozymandias089.devlog_api.member.entity.MemberEntity;
 import com.ozymandias089.devlog_api.post.dto.PostSummaryDTO;
+import com.ozymandias089.devlog_api.post.dto.response.GetDetailedPostResponseDTO;
+import com.ozymandias089.devlog_api.post.dto.response.GetPostListResponseDTO;
+import com.ozymandias089.devlog_api.post.dto.response.PostCreateResponseDTO;
 import com.ozymandias089.devlog_api.post.entity.PostEntity;
 import com.ozymandias089.devlog_api.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -60,14 +63,43 @@ public final class PostMapper {
     public static List<PostSummaryDTO> toPostSummaryDTOs(Page<PostRepository.ListRow> pageData) {
         return pageData.getContent().stream()
                 .map(row ->
-                    new PostSummaryDTO(
-                        row.getTitle(),
-                        row.getSlug(),
-                        row.getAuthor().getUuid(),
-                        row.getAuthor().getUsername(),
-                        row.getViewCount(),
-                        row.getCreatedAt()
-                    )
-        ).toList();
+                        PostSummaryDTO.builder()
+                                .title(row.getTitle())
+                                .slug(row.getSlug())
+                                .authorUuid(row.getAuthor().getUuid().toString())
+                                .authorUsername(row.getAuthor().getUsername())
+                                .viewCount(row.getViewCount())
+                                .createdAt(row.getCreatedAt())
+                                .build()
+                ).toList();
+    }
+
+    public static GetDetailedPostResponseDTO toGetDetailedPostResponseDTO(PostEntity post) {
+        return GetDetailedPostResponseDTO.builder()
+                .title(post.getTitle())
+                .authorUuid(post.getAuthor().getUuid().toString())
+                .authorUsername(post.getAuthor().getUsername())
+                .viewCount(post.getViewCount())
+                .createdAt(post.getCreatedAt())
+                .content(post.getContent())
+                .build();
+    }
+
+    public static GetPostListResponseDTO toGetPostListResponseDTO(List<PostSummaryDTO> posts, Page<PostRepository.ListRow> pageData) {
+        return GetPostListResponseDTO.builder()
+                .posts(posts)
+                .page(pageData.getNumber())
+                .size(pageData.getSize())
+                .totalElements(pageData.getTotalElements())
+                .totalPages(pageData.getTotalPages())
+                .hasNext(pageData.hasNext())
+                .hasPrev(pageData.hasPrevious())
+                .build();
+    }
+
+    public static PostCreateResponseDTO toPostCreateResponseDTO(String slug) {
+        return PostCreateResponseDTO.builder()
+                .slug(slug)
+                .build();
     }
 }

@@ -1,6 +1,7 @@
 package com.ozymandias089.devlog_api.post.dto.request;
 
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
 
 /**
  * 게시글 부분 수정(PATCH) 요청 DTO입니다.
@@ -39,7 +40,7 @@ import jakarta.validation.constraints.Size;
  *           부분 수정 의도(PATCH)를 유지하기 위해 {@code @NotBlank}는 사용하지 않습니다.
  * @since 1.0
  */
-public record UpdatePostRequestDTO(
-        @Size(max = 150) String title,
-        @Size(max = 20_000) String content) {
+public class UpdatePostRequestDTO {
+        @Getter @Size(max = 150) String title;
+        @Getter @Size(max = 20_000) String content;
 }

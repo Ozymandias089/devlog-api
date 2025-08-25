@@ -10,6 +10,7 @@ import com.ozymandias089.devlog_api.post.dto.request.CreatePostRequestDTO;
 import com.ozymandias089.devlog_api.post.dto.request.UpdatePostRequestDTO;
 import com.ozymandias089.devlog_api.post.dto.response.GetDetailedPostResponseDTO;
 import com.ozymandias089.devlog_api.post.dto.response.GetPostListResponseDTO;
+import com.ozymandias089.devlog_api.post.dto.response.PostCreateResponseDTO;
 import com.ozymandias089.devlog_api.post.entity.PostEntity;
 import com.ozymandias089.devlog_api.post.provider.PostMapper;
 import com.ozymandias089.devlog_api.post.provider.SlugProvider;
@@ -71,22 +72,22 @@ public class PostService {
      * @since 1.0
      */
     @Transactional
-    public String createPost(String uuid, CreatePostRequestDTO createPostRequestDTO) {
+    public PostCreateResponseDTO createPost(String uuid, CreatePostRequestDTO createPostRequestDTO) {
         MemberEntity member = memberRepository.findByUuid(UUID.fromString(uuid))
                 .orElseThrow(() -> new InvalidCredentialsException("No member found with the provided Token"));
 
-        String slug = slugProvider.generateUniqueSlug(member, createPostRequestDTO.title());
+        String slug = slugProvider.generateUniqueSlug(member, createPostRequestDTO.getTitle());
 
-        PostEntity post = PostMapper.toPostEntity(member, createPostRequestDTO.title(), createPostRequestDTO.content(), slug);
+        PostEntity post = PostMapper.toPostEntity(member, createPostRequestDTO.getTitle(), createPostRequestDTO.getContent(), slug);
 
         try {
             postRepository.save(post);
-            return slug;
+            return PostMapper.toPostCreateResponseDTO(slug);
         } catch (DataIntegrityViolationException ex) {
-            String fallback = slugProvider.generateUniqueSlug(member, createPostRequestDTO.title());
-            post = PostMapper.toPostEntity(member, createPostRequestDTO.title(), createPostRequestDTO.content(), fallback);
+            String fallback = slugProvider.generateUniqueSlug(member, createPostRequestDTO.getTitle());
+            post = PostMapper.toPostEntity(member, createPostRequestDTO.getTitle(), createPostRequestDTO.getContent(), fallback);
             postRepository.save(post);
-            return fallback;
+            return PostMapper.toPostCreateResponseDTO(fallback);
         }
     }
 
@@ -114,15 +115,7 @@ public class PostService {
         Page<PostRepository.ListRow> pageData = postRepository.findAllProjectedBy(pageable);
         List<PostSummaryDTO> posts = PostMapper.toPostSummaryDTOs(pageData);
 
-        return new GetPostListResponseDTO(
-                posts,
-                pageData.getNumber(),
-                pageData.getSize(),
-                pageData.getTotalElements(),
-                pageData.getTotalPages(),
-                pageData.hasNext(),
-                pageData.hasPrevious()
-        );
+        return PostMapper.toGetPostListResponseDTO(posts, pageData);
     }
 
     /**
@@ -151,14 +144,7 @@ public class PostService {
 
         PostEntity post = postRepository.findBySlugWithAuthor(slug).orElseThrow(() -> new PostNotFoundException(slug));
 
-        return new GetDetailedPostResponseDTO(
-                post.getTitle(),
-                post.getAuthor().getUuid(),
-                post.getAuthor().getUsername(),
-                post.getViewCount(),
-                post.getCreatedAt(),
-                post.getContent()
-        );
+        return PostMapper.toGetDetailedPostResponseDTO(post);
     }
 
     /**
@@ -199,15 +185,15 @@ public class PostService {
         if (!targetPost.getAuthor().getUuid().equals(UUID.fromString(uuid))) throw new ForbiddenActionException("Unauthorized Action.");
 
         // 3. dto의 제목, 내용을 반영한다.
-        if (requestDTO.title() != null &&
-                !requestDTO.title().isBlank() &&
-                !requestDTO.title().equals(targetPost.getTitle())
-        ) targetPost.updateTitle(requestDTO.title().trim());
+        if (requestDTO.getTitle() != null &&
+                !requestDTO.getTitle().isBlank() &&
+                !requestDTO.getTitle().equals(targetPost.getTitle())
+        ) targetPost.updateTitle(requestDTO.getTitle().trim());
 
-        if (requestDTO.content() != null &&
-                !requestDTO.content().isBlank() &&
-                !requestDTO.content().equals(targetPost.getContent()))
-            targetPost.updateContent(requestDTO.content());
+        if (requestDTO.getContent() != null &&
+                !requestDTO.getContent().isBlank() &&
+                !requestDTO.getContent().equals(targetPost.getContent()))
+            targetPost.updateContent(requestDTO.getContent());
 
         // 4. 정본 슬러그 반환 (불변 정책)
         return targetPost.getSlug();
