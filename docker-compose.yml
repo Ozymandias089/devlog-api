@@ -11,7 +11,7 @@ services:
       MYSQL_PASSWORD: devpass
       SPRING_DATASOURCE_DRIVER: com.mysql.cj.jdbc.Driver
     ports:
-      - "3306:3306"
+      - "3370:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     networks:
